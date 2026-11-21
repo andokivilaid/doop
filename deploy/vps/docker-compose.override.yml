@@ -8,6 +8,11 @@ services:
       DATABASE_URL: postgres://doop:${POSTGRES_PASSWORD}@db:5432/doop
       SECRETS_ENCRYPTION_KEYS: ${SECRETS_ENCRYPTION_KEYS}
       TRUSTED_ORIGINS: https://${DOOP_HOST}
+      # this instance has no background library of its own: borrow doop.design's
+      BACKGROUNDS_ORIGIN: ${BACKGROUNDS_ORIGIN:-https://doop.design}
+      # optional agent search keys, read from the root .env when set
+      PEXELS_API_KEY: ${PEXELS_API_KEY:-}
+      BRANDFETCH_CLIENT_ID: ${BRANDFETCH_CLIENT_ID:-}
     labels:
       traefik.enable: 'true'
       traefik.http.routers.doop.rule: Host(`${DOOP_HOST}`)
