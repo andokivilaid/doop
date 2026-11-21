@@ -144,7 +144,14 @@ interface ChatToolCall {
   id: string
   type: 'function'
   function: { name: string; arguments: string }
+  /* provider data that must come back verbatim with the call: Gemini puts
+     its thought_signature here and rejects the next turn without it */
+  extra_content?: unknown
 }
+
+/* the key a tool_use block carries a call's extra_content under; the block
+   stays in the run's message list, so it reaches the next request intact */
+const EXTRA_CONTENT = 'chatCompletionsExtra'
 
 function toMessages(
   system: string,
@@ -170,10 +177,12 @@ function toMessages(
         if (block.type === 'text') texts.push(block.text)
         else if (block.type === 'thinking') thoughts.push(block.thinking)
         else if (block.type === 'tool_use') {
+          const extra = (block as { [EXTRA_CONTENT]?: unknown })[EXTRA_CONTENT]
           calls.push({
             id: block.id,
             type: 'function',
             function: { name: block.name, arguments: JSON.stringify(block.input ?? {}) },
+            ...(extra !== undefined ? { extra_content: extra } : {}),
           })
         }
       }
@@ -255,7 +264,7 @@ interface CompletionBody {
       content?: string | null
       reasoning_content?: string | null
       refusal?: string | null
-      tool_calls?: { id?: string; function?: { name?: string; arguments?: string } }[]
+      tool_calls?: { id?: string; function?: { name?: string; arguments?: string }; extra_content?: unknown }[]
     }
   }[]
 }
@@ -292,7 +301,8 @@ function fromCompletion(body: CompletionBody, label: string): TurnResult {
       id: call.id || `call_${randomUUID()}`,
       name: call.function?.name || 'unknown',
       input: input as Record<string, unknown>,
-    })
+      ...(call.extra_content !== undefined ? { [EXTRA_CONTENT]: call.extra_content } : {}),
+    } as TurnBlock)
   }
   const truncated = choice.finish_reason === 'length'
   const stop: StopReason = refused ? 'refusal' : toolCalls > 0 ? 'tool_use' : truncated ? 'max_tokens' : 'end_turn'

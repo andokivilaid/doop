@@ -297,3 +297,49 @@ describe('reasoning_content', () => {
     )
   })
 })
+
+describe('Gemini thought signatures', () => {
+  const signed = {
+    choices: [
+      {
+        finish_reason: 'tool_calls',
+        message: {
+          content: null,
+          tool_calls: [
+            {
+              id: 'call_1',
+              function: { name: 'set_status', arguments: '{"status":"Sketching"}' },
+              extra_content: { google: { thought_signature: 'sig-abc' } },
+            },
+            { id: 'call_2', function: { name: 'get_tokens', arguments: '{}' } },
+          ],
+        },
+      },
+    ],
+  }
+
+  it('sends each call’s extra_content back with it on the next turn', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementationOnce(async () => new Response(JSON.stringify(signed)))
+      .mockImplementationOnce(async () => new Response(JSON.stringify({ choices: [{ message: { content: 'Done' } }] })))
+    const config = geminiConfig('AIza-key', 'gemini-3.8-flash', true)
+    const messages: Anthropic.MessageParam[] = [{ role: 'user', content: 'make a hero' }]
+    const first = await runChatCompletionsTurn(config, { system: 'sys', tools: [TOOL], messages, maxTokens: 16000 })
+    messages.push({ role: 'assistant', content: first.content })
+    messages.push({
+      role: 'user',
+      content: [
+        { type: 'tool_result', tool_use_id: 'call_1', content: 'ok' },
+        { type: 'tool_result', tool_use_id: 'call_2', content: '{}' },
+      ],
+    })
+    await runChatCompletionsTurn(config, { system: 'sys', tools: [TOOL], messages, maxTokens: 16000 })
+    const second = JSON.parse(String(fetchSpy.mock.calls[1]![1]!.body)) as {
+      messages: { tool_calls?: Record<string, unknown>[] }[]
+    }
+    const calls = second.messages[2]!.tool_calls!
+    expect(calls[0]).toMatchObject({ id: 'call_1', extra_content: { google: { thought_signature: 'sig-abc' } } })
+    expect(calls[1]).not.toHaveProperty('extra_content')
+  })
+})
