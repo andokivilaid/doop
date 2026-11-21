@@ -54,4 +54,38 @@ export const agents = {
   save: 'Save',
   create: 'Add agent',
   saving: 'Saving…',
+  skillsTitle: 'Design & frontend skills',
+  skillsDescriptionWorkspace:
+    'Craft playbooks seeded automatically to every MCP coding agent and the Doop Agent on this workspace’s canvases.',
+  skillsDescriptionPersonal:
+    'Craft playbooks seeded automatically to every MCP coding agent and the Doop Agent on your personal canvases.',
+  skillsDescriptionRest: 'Toggle built-in packs, tailor their rules to your stack, or add your own.',
+  skillsBuiltIn: 'Built-in packs',
+  skillsBuiltInNote:
+    'Enabled packs ride along in get_canvas and resident runs so agents follow your typography, token, WCAG and mobile bars out of the box.',
+  skillsToggle: 'Enable {name}',
+  skillsAdd: 'Add skill',
+  skillsCreate: 'Add skill',
+  skillsCount: { one: '{count} custom skill', other: '{count} custom skills' },
+  skillsFull: 'You have reached the limit of {count} custom skills. Remove one to add another.',
+  skillsEmptyTitle: 'No custom skills yet',
+  skillsEmptyPersonal:
+    'Add repo-specific frontend conventions (such as shadcn/ui, Vue, Svelte, or brand motion rules) for your personal canvases.',
+  skillsEmptyWorkspace:
+    'Add team-wide frontend conventions (such as component imports, CSS architecture, or localization rules) for every canvas in this workspace.',
+  skillsLoadFailed: 'The agent skills could not be loaded.',
+  skillsSaveFailed: 'The skill could not be saved. Try again.',
+  skillsRemoveFailed: 'The skill could not be removed. Try again.',
+  skillsRemoveTitle: 'Remove {name}?',
+  skillsRemoveDescription: 'Connected agents will no longer receive this skill pack on new runs.',
+  skillsAddTitle: 'Add a custom skill',
+  skillsBuiltInLede: 'Customize this built-in skill pack for your canvases. Reset restores the default rules.',
+  skillsFormLede: 'Actionable Markdown rules seeded automatically to connected coding agents and the Doop Agent.',
+  skillsTitlePlaceholder: 'Design System Conventions',
+  skillsSlug: 'Slug',
+  skillsSlugFixedHint: 'The slug stays fixed once created so get_skill calls remain stable.',
+  skillsSummaryPlaceholder: 'Component imports, spacing tokens and form validation patterns',
+  skillsMarkdown: 'Skill rules (Markdown)',
+  skillsMarkdownPlaceholder: '### Component Conventions\n- Prefer semantic <button> and <dialog> elements…',
+  skillsMarkdownHint: '{used} / {max} characters. Write concrete rules agents can verify visually and in markup.',
 } as const

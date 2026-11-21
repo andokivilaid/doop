@@ -27,6 +27,9 @@ export const actions = {
   versionHistory: 'Show version history',
   export: 'Export…',
   exportPdf: 'Export frames to PDF…',
+  copyCleanHtml: 'Copy as clean HTML',
+  copyReactTailwind: 'Copy as React + Tailwind',
+  copyAgentBrief: 'Copy agent implementation brief',
 
   /* Edit */
   undo: 'Undo',

@@ -15,6 +15,9 @@ export const inspector = {
   exportLayer: 'Export {name}',
   exportLayerTitle: 'Download this layer at the scale and format picked above, cut from its frame as you see it',
   copyPng: 'Copy as PNG',
+  copyCleanHtml: 'Copy clean HTML',
+  copyReactTailwind: 'Copy React + Tailwind',
+  copyAgentBrief: 'Copy agent brief',
   copyImageUrlTitle:
     'Public image URL — always renders the current design; paste it as og:image or a blog featured image',
   copyImageUrl: 'Copy image URL',

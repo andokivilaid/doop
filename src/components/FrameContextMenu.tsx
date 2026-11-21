@@ -4,6 +4,7 @@ import { errorMessage } from '../lib/api'
 import { copyFrames, duplicateFrames, hasFrameClip, pasteFrameAtScreen } from '../lib/frameClipboard'
 import { writeCanvasClipboard } from '../lib/canvasClipboard'
 import { copyFramePng } from '../lib/frameExport'
+import { copyAgentImplementationBrief, copyFrameCode } from '../lib/codeExportClient'
 import { deleteFramesTracked } from '../lib/history'
 import { isStackLocked, setFramesHidden, setFramesLocked } from '../lib/layerEdits'
 import { canEditOpenCanvas, useStore } from '../lib/store'
@@ -186,6 +187,15 @@ export function FrameContextMenu({
           }}
         >
           {t('stage.copyAsPng')}
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => void copyFrameCode(frame, 'html', 'frame_menu')}>
+          {t('stage.copyCleanHtml')}
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => void copyFrameCode(frame, 'tsx', 'frame_menu')}>
+          {t('stage.copyReactTailwind')}
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => void copyAgentImplementationBrief(frame, 'frame_menu')}>
+          {t('stage.copyAgentBrief')}
         </ContextMenuItem>
         <ContextMenuItem onSelect={() => void copyImageUrl(frame)}>{t('stage.copyImageUrl')}</ContextMenuItem>
         <ContextMenuItem onSelect={() => setExportFrames(groupFrames())}>{t('stage.exportEllipsis')}</ContextMenuItem>

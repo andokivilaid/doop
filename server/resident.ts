@@ -5,6 +5,7 @@ import { store } from './store.ts'
 import { layerExport } from './layerExport.ts'
 import { MAX_EXPORT_SCALE, MIN_EXPORT_SCALE } from '../shared/exportScale.ts'
 import { fontsForCanvas } from './fonts.ts'
+import { activeSkillsForCanvas, skillsPromptBlock } from './agentSkills.ts'
 import { libraryBrief, MAX_FONT_BYTES } from '../shared/fonts.ts'
 import { addCanvasFont, uploadedFontResult } from './canvasFontUpload.ts'
 import { inlineDataRefusal } from './inlineData.ts'
@@ -741,6 +742,8 @@ async function runAgent(canvasId: string, agentName: string, stalled: Set<string
       /* the canvas's custom fonts: which families exist, and that naming one
          is enough (the server adds the @font-face) */
       const canvas = store.getCanvas(canvasId)
+      const activeSkills = activeSkillsForCanvas(canvas)
+      const skillsBlock = activeSkills.length ? [{ text: skillsPromptBlock(activeSkills), cache: true }] : []
       const fontsText = [canvas ? libraryBrief(fontsForCanvas(canvas)) : '', webFontsBrief()]
         .filter(Boolean)
         .join('\n\n')
@@ -817,6 +820,7 @@ async function runAgent(canvasId: string, agentName: string, stalled: Set<string
           system: [
             systemFor(role, roster),
             ...guidelinesBlock.map((b) => b.text),
+            ...skillsBlock.map((b) => b.text),
             ...fontsBlock.map((b) => b.text),
             ...tokensBlock.map((b) => b.text),
             ...existingStyleBlock.map((b) => b.text),
@@ -866,6 +870,7 @@ async function runAgent(canvasId: string, agentName: string, stalled: Set<string
                 system: [
                   { text: systemFor(role, roster), cache: true },
                   ...guidelinesBlock,
+                  ...skillsBlock,
                   ...fontsBlock,
                   ...tokensBlock,
                   ...existingStyleBlock,

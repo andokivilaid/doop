@@ -24,6 +24,8 @@ const BY_CONTEXT = [
   'get_guide', // the system prompt carries the guide's sections
   'get_guidelines', // canvas guidelines ride as a system block
   'list_guidelines',
+  'list_skills', // active skills ride as a system block in every resident run
+  'get_skill',
   'get_feedback', // feedback, cards and comments arrive in the kickoff
   'get_comments',
   'list_canvases', // a resident run is scoped to its canvas
@@ -39,6 +41,7 @@ const MISSING = [
   'restore_frame_version',
   'set_page_background',
   'export_frame',
+  'export_frame_code',
   'upload_asset',
   'list_linear_issues', // integration tools, registered by their connections
   'get_linear_issue',

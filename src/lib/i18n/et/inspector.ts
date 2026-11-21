@@ -15,6 +15,9 @@ export const inspector: Catalog['inspector'] = {
   exportLayerTitle:
     'Laadi see kiht alla ülal valitud mõõtkavas ja vormingus, välja lõigatud raamist nii, nagu seda näed',
   copyPng: 'Kopeeri PNG-na',
+  copyCleanHtml: 'Kopeeri puhas HTML',
+  copyReactTailwind: 'Kopeeri React + Tailwind',
+  copyAgentBrief: 'Kopeeri agendi lähteülesanne',
   copyImageUrlTitle:
     'Avalik pildi URL – näitab alati praegust kujundust; kasuta seda og:image’ina või blogipostituse pildina',
   copyImageUrl: 'Kopeeri pildi URL',

@@ -12,6 +12,8 @@ import { readingOrder } from '../../../shared/frameOrder'
 import { redo, undo } from '../history'
 import { runViewCommand } from '../viewMenu'
 import { downloadFramesPdf } from '../frameExport'
+import { copyAgentImplementationBrief, copyFrameCode } from '../codeExportClient'
+import { buildLayerTree, findLayer, layerName } from '../layers'
 import { duplicateFrames, hasFrameClip, pasteFramesOver, replaceFramesWithClip } from '../frameClipboard'
 import { hasElementClip, pasteLayer, replaceWithClip } from '../elementClipboard'
 import {
@@ -155,6 +157,20 @@ function pdfFrames() {
   return selected.length ? selected : readingOrder(currentPageCanvas()?.frames ?? [])
 }
 
+function codeTarget() {
+  const pickedLayer = pickedLayers()
+  if (pickedLayer && !pickedLayer.standalone && pickedLayer.selectors[0]) {
+    const selector = pickedLayer.selectors[0]
+    const node = findLayer(buildLayerTree(pickedLayer.frame.html), selector)
+    return {
+      frame: pickedLayer.frame,
+      element: { selector, name: node ? layerName(node) : 'element' },
+    }
+  }
+  const frames = pdfFrames()
+  return frames[0] ? { frame: frames[0] } : null
+}
+
 function pasteOver(): boolean {
   const p = pickedLayers()
   if (p && hasElementClip()) return pasteLayer(p.frame, p.selectors[p.selectors.length - 1] ?? null)
@@ -274,6 +290,39 @@ export const ACTIONS: readonly CanvasAction[] = [
     run: () => {
       const canvasId = h()?.canvasId
       if (canvasId) void downloadFramesPdf(canvasId, pdfFrames())
+    },
+  },
+  {
+    id: 'copy-react-tsx',
+    label: 'actions.copyReactTailwind',
+    menu: 'file',
+    section: 3,
+    enabled: () => codeTarget() !== null,
+    run: () => {
+      const target = codeTarget()
+      if (target) void copyFrameCode(target.frame, 'tsx', 'command_palette', target.element)
+    },
+  },
+  {
+    id: 'copy-clean-html',
+    label: 'actions.copyCleanHtml',
+    menu: 'file',
+    section: 3,
+    enabled: () => codeTarget() !== null,
+    run: () => {
+      const target = codeTarget()
+      if (target) void copyFrameCode(target.frame, 'html', 'command_palette', target.element)
+    },
+  },
+  {
+    id: 'copy-agent-brief',
+    label: 'actions.copyAgentBrief',
+    menu: 'file',
+    section: 3,
+    enabled: () => codeTarget() !== null,
+    run: () => {
+      const target = codeTarget()
+      if (target) void copyAgentImplementationBrief(target.frame, 'command_palette', target.element)
     },
   },
 

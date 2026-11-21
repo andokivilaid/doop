@@ -552,6 +552,43 @@ export const agentOverrides = pgTable(
   (t) => [primaryKey({ columns: [t.scope, t.roleId] })],
 )
 
+/** Custom agent skills (shared/agentSkills.ts): design & frontend playbooks
+ *  seeded to MCP and resident agents for a workspace (`ws:<id>`) or a person
+ *  (`user:<id>`). */
+export const agentSkills = pgTable(
+  'agent_skills',
+  {
+    id: text('id').primaryKey(),
+    scope: text('scope').notNull(),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    summary: text('summary').notNull(),
+    markdown: text('markdown').notNull(),
+    createdBy: text('created_by').notNull(),
+    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+    updatedAt: bigint('updated_at', { mode: 'number' }).notNull(),
+  },
+  (t) => [uniqueIndex('agent_skills_scope_slug_idx').on(t.scope, t.slug)],
+)
+
+/** A workspace's or a person's changes to one built-in skill pack
+ *  (shared/agentSkills.ts): switched off, or its title, summary or markdown
+ *  replaced. No row = enabled as shipped. */
+export const agentSkillOverrides = pgTable(
+  'agent_skill_overrides',
+  {
+    scope: text('scope').notNull(),
+    slug: text('slug').notNull(),
+    disabled: boolean('disabled').notNull().default(false),
+    title: text('title'),
+    summary: text('summary'),
+    markdown: text('markdown'),
+    updatedBy: text('updated_by').notNull(),
+    updatedAt: bigint('updated_at', { mode: 'number' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.scope, t.slug] })],
+)
+
 /** Named design docs per canvas (brand rules, style recipes) — markdown
  *  written mostly for agents. Small and cold-path; hydrated with the canvas. */
 export const guidelines = pgTable(

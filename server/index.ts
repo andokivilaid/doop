@@ -145,6 +145,16 @@ import { modelCatalogFor } from './modelCatalog.ts'
 import { mentionedRole } from '../shared/agents.ts'
 import { hydrateCustomAgents, rosterFor, teamOfCanvas } from './customAgents.ts'
 import { customAgentsRouter } from './customAgentRoutes.ts'
+import { hydrateAgentSkills } from './agentSkills.ts'
+import { agentSkillsRouter } from './agentSkillRoutes.ts'
+import {
+  componentFileName,
+  exportCleanHtml,
+  exportReactTailwind,
+  exportTokensCssFile,
+  htmlFileName,
+  toComponentName,
+} from '../shared/codeExport.ts'
 import { activeAgentTasks } from '../shared/agentActivity.ts'
 import { colorFor } from '../shared/types.ts'
 import { isPeerViewport } from '../shared/viewport.ts'
@@ -177,6 +187,7 @@ await backgrounds.initBackgrounds()
 initAuth()
 await syncAdmins() // ADMIN_EMAILS -> user.role, for accounts that already exist
 await hydrateCustomAgents() // before the logs: an interrupted claim is told apart by its agent's name
+await hydrateAgentSkills()
 let data = await persist.hydrate()
 if (data.canvases.length === 0 && (await persist.importLegacyJson())) {
   data = await persist.hydrate()
@@ -1118,6 +1129,7 @@ app.use('/api/notifications', notificationsRouter)
 app.use('/api/webhooks', webhooksRouter)
 app.use('/api/fonts', fontsRouter)
 app.use('/api/agents', customAgentsRouter)
+app.use('/api/agent-skills', agentSkillsRouter)
 
 /* the custom agents a canvas's team has: its workspace's, or its owner's (the
    automation editor asks for a step's canvas) */
@@ -2018,6 +2030,123 @@ app.post('/api/canvases/:id/github/:connId/import', async (req, res) => {
     res.json({ cards: outcome.cards, rejected })
   } catch (e) {
     res.status(400).json({ error: e instanceof Error ? e.message : 'import failed' })
+  }
+})
+
+/* Two-way repo sync: export canvas design tokens and selected frames as clean
+   React + Tailwind v4 (.tsx) or HTML (.html) files and open a GitHub PR. */
+app.post('/api/canvases/:id/github/:connId/pr', async (req, res) => {
+  const c = requireDurableCanvas(req, res, req.params.id)
+  if (!c) return
+  const conn = await github.getConnection(c.id, req.params.connId)
+  if (!conn) return res.status(404).json({ error: 'connection not found' })
+  try {
+    const format = req.body?.format === 'html' ? 'html' : 'tsx'
+    const includeTokens = req.body?.includeTokens !== false
+    const targetDir = github.normalizeRepoTargetDir(req.body?.targetDir)
+    const dirPrefix = targetDir ? `${targetDir}/` : ''
+
+    const requestedIds: string[] | null = Array.isArray(req.body?.frameIds)
+      ? (req.body.frameIds as unknown[]).map((id) => String(id))
+      : null
+    const candidateFrames = c.frames.filter((f) => !f.demo)
+    const selectedFrames =
+      requestedIds !== null
+        ? requestedIds
+            .map((id) => candidateFrames.find((f) => f.id === id))
+            .filter((f): f is NonNullable<typeof f> => Boolean(f))
+        : candidateFrames
+
+    const tokens = store.getTokens(c.id)
+    const tokenThemes = store.getTokenThemes(c.id)
+    const files: github.RepoWriteFile[] = []
+
+    if (includeTokens) {
+      files.push({
+        path: `${dirPrefix}tokens.css`,
+        content: exportTokensCssFile(tokens, tokenThemes),
+      })
+    }
+
+    const usedFileNames = new Set<string>(files.map((f) => f.path.toLowerCase()))
+    for (const frame of selectedFrames) {
+      const baseName = format === 'html' ? htmlFileName(frame.name) : componentFileName(frame.name)
+      const dotIdx = baseName.lastIndexOf('.')
+      const stem = baseName.slice(0, dotIdx)
+      const ext = baseName.slice(dotIdx)
+      let fileName = baseName
+      let suffix = 2
+      while (usedFileNames.has(`${dirPrefix}${fileName}`.toLowerCase())) {
+        fileName = `${stem}${suffix}${ext}`
+        suffix += 1
+      }
+      const fullPath = `${dirPrefix}${fileName}`
+      usedFileNames.add(fullPath.toLowerCase())
+
+      const componentStem = fileName.slice(0, fileName.lastIndexOf('.'))
+      const content =
+        format === 'html'
+          ? exportCleanHtml(frame.html, {
+              tokens,
+              tokenThemes,
+              externalTokensPath: includeTokens ? './tokens.css' : undefined,
+            })
+          : exportReactTailwind(frame.html, {
+              componentName: toComponentName(componentStem),
+              tokens,
+              tokenThemes,
+              importTokensPath: includeTokens ? './tokens.css' : undefined,
+            })
+      files.push({ path: fullPath, content })
+    }
+
+    if (!files.length) {
+      return res.status(400).json({ error: 'select at least one frame or enable design tokens export' })
+    }
+
+    const canvasUrl = `${env.BETTER_AUTH_URL}/c/${encodeURIComponent(c.id)}`
+    const defaultTitle = `chore(design): sync "${c.name}" from Doop`
+    const prTitle = typeof req.body?.title === 'string' && req.body.title.trim() ? req.body.title.trim() : defaultTitle
+    const prBodyLines = [
+      `## Design Sync from Doop`,
+      '',
+      `- **Canvas**: [${c.name}](${canvasUrl})`,
+      `- **Format**: ${format === 'tsx' ? 'React + Tailwind v4 (`.tsx`)' : 'Clean HTML + CSS (`.html`)'}`,
+      `- **Target directory**: \`${targetDir || '/'}\``,
+      ...(includeTokens
+        ? [`- **Design tokens**: \`${dirPrefix}tokens.css\` (${tokens.length} token${tokens.length === 1 ? '' : 's'})`]
+        : []),
+      ...(selectedFrames.length
+        ? [
+            '',
+            '### Exported Frames',
+            ...selectedFrames.map(
+              (f) =>
+                `- **${f.name}** (${Math.round(f.width)}×${Math.round(f.height)}px) — [Canvas](${canvasUrl}?frame=${encodeURIComponent(f.id)}) · [Live preview](${env.BETTER_AUTH_URL}/i/${encodeURIComponent(f.id)}.png?scale=2)`,
+            ),
+          ]
+        : []),
+    ]
+
+    const result = await withConnectionLock(conn.id, () =>
+      github.pushDesignPullRequest(conn, {
+        files,
+        branchName: typeof req.body?.branchName === 'string' ? req.body.branchName : undefined,
+        commitMessage: prTitle,
+        prTitle,
+        prBody: prBodyLines.join('\n'),
+      }),
+    )
+
+    captureFeature(req.user!.id, 'github_pr_exported', 'ui', {
+      canvas_id: c.id,
+      format,
+      frame_count: selectedFrames.length,
+      include_tokens: includeTokens,
+    })
+    res.json(result)
+  } catch (e) {
+    res.status(400).json({ error: e instanceof Error ? e.message : 'could not create pull request' })
   }
 })
 
