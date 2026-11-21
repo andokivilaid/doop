@@ -8,7 +8,13 @@ import { cancelLibraryResume, confirmLibraryResume } from '../lib/libraryResume'
 import { takeNameAfterCheckout } from '../lib/upgrade'
 import { posthog } from '../lib/posthog'
 import { cachedWorkspace, fetchWorkspace } from '../lib/workspaceCache'
-import { AppRail, railLayout, workspacePanesFor, type WorkspacePane } from '../components/AppRail'
+import {
+  AppRail,
+  railLayout,
+  SHOW_WORKSPACE_BILLING,
+  workspacePanesFor,
+  type WorkspacePane,
+} from '../components/AppRail'
 import { NameWorkspaceModal, UpgradeModal } from '../components/WorkspaceModals'
 import { SeatStepper } from '../components/SeatStepper'
 import { Avatar } from '../components/ui/avatar'
@@ -36,7 +42,7 @@ type Pane = WorkspacePane
 const PANES: readonly string[] = ['members', 'fonts', 'agents', 'libraries', 'billing', 'general'] satisfies Pane[]
 
 function isPane(value: string | null): value is Pane {
-  return value !== null && PANES.includes(value)
+  return value !== null && PANES.includes(value) && (SHOW_WORKSPACE_BILLING || value !== 'billing')
 }
 
 const STATUS_LABEL = {
@@ -96,7 +102,9 @@ export function Workspace({ workspaceId }: { workspaceId: string }) {
       pane: isPane(pane) ? pane : undefined,
     }
   })
-  const [picked, setPicked] = useState<Pane>(landing.checkout ? 'billing' : (landing.pane ?? 'members'))
+  const [picked, setPicked] = useState<Pane>(
+    landing.checkout && SHOW_WORKSPACE_BILLING ? 'billing' : (landing.pane ?? 'members'),
+  )
 
   /* the pane rides in the URL, so a reload or a shared link lands on it */
   function setPane(next: Pane) {

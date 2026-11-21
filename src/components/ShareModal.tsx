@@ -5,6 +5,7 @@ import { navigate } from '../App'
 import type { WorkspaceSummary } from '../../shared/types'
 import { api, ApiError, paywalledWorkspace, type CanvasMember } from '../lib/api'
 import { PERSONAL_WORKSPACE, UpgradeModal } from './WorkspaceModals'
+import { SHOW_COMMUNITY } from './AppRail'
 import { authClient } from '../lib/auth'
 import { posthog } from '../lib/posthog'
 import { Avatar } from './ui/avatar'
@@ -327,7 +328,7 @@ export function ShareModal({
             {t('panels.shareCopyLink')}
           </Button>
         </div>
-        {isOwner && (
+        {SHOW_COMMUNITY && isOwner && (
           <CommunityListing canvas={canvas} busy={busy} setBusy={setBusy} setError={setError} onChange={onChange} />
         )}
         {upgrade && (

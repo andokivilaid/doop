@@ -31,14 +31,11 @@ enum AgentMark {
         return n.contains("claude") ? "claude" : (n.contains("codex") || n.contains("gpt")) ? "openai" : "doop"
     }
 
-    /// The Doop mark: a half disc with a dot at its foot (viewBox 42 32 118 137, translated by 14).
+    /// The Doop mark: an artist's painting palette silhouette (viewBox 14 16 176 168).
     static func doopMark() -> CGPath {
-        let p = CGMutablePath()
-        p.move(to: CGPoint(x: 92, y: 36))
-        p.addArc(center: CGPoint(x: 92, y: 100), radius: 64, startAngle: -.pi / 2, endAngle: .pi / 2, clockwise: false)
-        p.closeSubpath()
-        p.addEllipse(in: CGRect(x: 64 - 19, y: 146 - 19, width: 38, height: 38))
-        return p
+        SVGPath.parse(
+            "M 16 110 C 12 52, 56 16, 112 18 C 160 20, 190 50, 188 88 C 186 112, 168 120, 150 120 C 132 120, 124 132, 132 148 C 140 164, 128 182, 98 183 C 48 185, 20 154, 16 110 Z M 80.4 153.4 A 17.5 11.5 -18 1 0 113.6 142.6 A 17.5 11.5 -18 1 0 80.4 153.4 Z M 35.5 113 a 11.5 11.5 0 1 0 23 0 a 11.5 11.5 0 1 0 -23 0 Z M 50 69 a 12 12 0 1 0 24 0 a 12 12 0 1 0 -24 0 Z M 91.5 47 a 12.5 12.5 0 1 0 25 0 a 12.5 12.5 0 1 0 -25 0 Z M 135.5 65 a 11.5 11.5 0 1 0 23 0 a 11.5 11.5 0 1 0 -23 0 Z"
+        )
     }
 }
 

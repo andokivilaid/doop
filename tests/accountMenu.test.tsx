@@ -36,15 +36,20 @@ async function openMenu(): Promise<Map<string, string | null>> {
   return new Map(links.map((a) => [a.textContent?.trim() ?? '', a.getAttribute('href')]))
 }
 
-it('links the desktop download and the website from the account menu', async () => {
+it('hides the plan badge and external Doop links in the account menu', async () => {
   const links = await openMenu()
-  expect(links.get('Get desktop app')).toBe('https://doop.design/download')
-  expect(links.get('Doop website')).toBe('https://doop.design/?site')
+  expect(links.has('Help & docs')).toBe(false)
+  expect(links.has('Get desktop app')).toBe(false)
+  expect(links.has('Doop website')).toBe(false)
+  const menuText = document.querySelector('[role="menu"]')?.textContent ?? ''
+  expect(menuText).not.toContain('Free')
+  expect(menuText).toContain('Settings')
 })
 
-it('offers no download inside the desktop app', async () => {
+it('keeps external links hidden inside the desktop app too', async () => {
   shell.desktop = true
   const links = await openMenu()
+  expect(links.has('Help & docs')).toBe(false)
   expect(links.has('Get desktop app')).toBe(false)
-  expect(links.get('Doop website')).toBe('https://doop.design/?site')
+  expect(links.has('Doop website')).toBe(false)
 })

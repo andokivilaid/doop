@@ -51,7 +51,10 @@ export const auth: Catalog['auth'] = {
   redirectingTo: 'Suuname sind teenusesse {provider}…',
   signInAnotherWay: 'Logi sisse muul viisil',
   signupDisabled: 'E-posti ja parooliga registreerumine on selles instantsis välja lülitatud.',
-  awaitingApproval: 'Sinu konto ootab administraatori kinnitust. Proovi pärast kinnitamist uuesti sisse logida.',
+  signupPendingApproval:
+    'Konto on loodud — ootab administraatori kinnitust. Sinu registreerumine on vastu võetud ja saad siin sisse logida kohe, kui administraator on konto aktiveerinud.',
+  awaitingApproval:
+    'Sinu konto ootab endiselt administraatori kinnitust. Enne sisselogimist peab administraator sinu konto aktiveerima.',
   browserSignInNotice: 'Lõpeta sisselogimine brauseris — doop logib sind siin sisse kohe, kui tagasi tuled.',
   verificationSent: 'Kinnituskiri saadetud — vaata oma postkasti.',
   resetLinkSent: 'Kui selle e-postiga konto on olemas, on lähtestamislink teel.',

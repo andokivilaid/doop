@@ -73,9 +73,18 @@ export type WorkspacePane = 'members' | 'fonts' | 'agents' | 'libraries' | 'bill
 
 const WORKSPACE_PANES: readonly WorkspacePane[] = ['members', 'fonts', 'agents', 'libraries', 'billing', 'general']
 
+/* fork: billing plans don't apply to this self-hosted instance, so the
+   workspace Plan & billing pane is hidden (flip to bring it back) */
+export const SHOW_WORKSPACE_BILLING = false
+
+/* fork: hide the public community gallery (flip to bring it back) */
+export const SHOW_COMMUNITY = false
+
 /** the panes a workspace role may open: billing and settings are for its owner and admins */
 export function workspacePanesFor(role: WorkspaceSummary['role'] | undefined): WorkspacePane[] {
-  return WORKSPACE_PANES.filter((p) => role !== 'member' || (p !== 'billing' && p !== 'general'))
+  return WORKSPACE_PANES.filter(
+    (p) => (SHOW_WORKSPACE_BILLING || p !== 'billing') && (role !== 'member' || (p !== 'billing' && p !== 'general')),
+  )
 }
 
 /** an agent that worked this recently is treated as still at the desk */
@@ -341,9 +350,11 @@ export function AppRail({
         <FolderPlusIcon size="rail" />
       </IconButton>
       <Rule />
-      <IconButton aria-label={t('rail.community')} on={active === 'community'} onClick={() => go('/community')}>
-        <WebIcon size="rail" />
-      </IconButton>
+      {SHOW_COMMUNITY && (
+        <IconButton aria-label={t('rail.community')} on={active === 'community'} onClick={() => go('/community')}>
+          <WebIcon size="rail" />
+        </IconButton>
+      )}
       <IconButton aria-label={t('rail.automations')} on={active === 'automations'} onClick={() => go('/automations')}>
         <WorkflowIcon size="rail" />
       </IconButton>
@@ -487,17 +498,21 @@ export function AppRail({
         </DashNavItem>
       </nav>
 
-      <DashSectionLabel density="rail">{t('rail.explore')}</DashSectionLabel>
-      <nav className="flex flex-col gap-0.5">
-        <DashNavItem
-          density="rail"
-          icon={<WebIcon size="rail" />}
-          active={active === 'community'}
-          onClick={() => go('/community')}
-        >
-          {t('rail.community')}
-        </DashNavItem>
-      </nav>
+      {SHOW_COMMUNITY && (
+        <>
+          <DashSectionLabel density="rail">{t('rail.explore')}</DashSectionLabel>
+          <nav className="flex flex-col gap-0.5">
+            <DashNavItem
+              density="rail"
+              icon={<WebIcon size="rail" />}
+              active={active === 'community'}
+              onClick={() => go('/community')}
+            >
+              {t('rail.community')}
+            </DashNavItem>
+          </nav>
+        </>
+      )}
 
       <DashSectionLabel density="rail">{t('rail.resources')}</DashSectionLabel>
       <nav className="flex flex-col gap-0.5">

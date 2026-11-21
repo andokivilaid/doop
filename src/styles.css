@@ -862,21 +862,15 @@ body[data-panel-resizing] * {
    the blob offsets and the hue tween like any other value. */
 @keyframes disc-hop {
   0%,
-  37.5%,
+  55%,
   100% {
-    transform: translateY(0) scale(1, 1);
+    transform: translateY(0) rotate(0deg);
   }
-  11.25% {
-    transform: translateY(-34px) scale(0.92, 1.08);
+  18% {
+    transform: translateY(-7px) rotate(-5deg);
   }
-  18.75% {
-    transform: translateY(0) scale(1.15, 0.85);
-  }
-  24.4% {
-    transform: translateY(-10px) scale(0.98, 1.02);
-  }
-  30% {
-    transform: translateY(0) scale(1.05, 0.95);
+  36% {
+    transform: translateY(-3px) rotate(3deg);
   }
 }
 

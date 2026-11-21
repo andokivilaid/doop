@@ -555,7 +555,8 @@ function buildAuth() {
       admin({
         impersonationSessionDuration: 15 * 60,
         /* also what a not-yet-approved signup is told (SIGNUP_REQUIRES_APPROVAL) */
-        bannedUserMessage: "This account isn't active. New accounts wait for an administrator's approval.",
+        bannedUserMessage:
+          'Your account is pending administrator approval. An administrator needs to activate your account before you can sign in.',
       }),
       /* oneTimeToken: how a Google / Microsoft / SSO sign-in finished in the
          system browser reaches the desktop app (src/lib/desktopAuth.ts). The

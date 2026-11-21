@@ -8,6 +8,7 @@ import {
   type DraftCount,
 } from '../lib/homePrompt'
 import { setPromptBoxHidden, usePromptBoxHidden } from '../lib/homePreferences'
+import { SHOW_COMMUNITY } from './AppRail'
 import { DoopMark } from './Logo'
 import { ModelPicker } from './ModelPicker'
 import { BrandMark } from './ui/brand-mark'
@@ -76,7 +77,7 @@ interface Chip {
 
 const chipIcon = { width: 13, height: 13 } as const
 
-const CHIPS: Chip[] = [
+const ALL_CHIPS: Chip[] = [
   {
     id: 'landing',
     label: 'home.chipLanding',
@@ -99,6 +100,8 @@ const CHIPS: Chip[] = [
   },
   { id: 'templates', label: 'home.chipTemplates', icon: <WebIcon {...chipIcon} />, action: 'onCommunity' },
 ]
+
+const CHIPS: Chip[] = ALL_CHIPS.filter((chip) => SHOW_COMMUNITY || chip.action !== 'onCommunity')
 
 /** the beam walks the strip while nobody hovers, like a slow carousel */
 const BEAM_STEP_MS = 4000
@@ -238,7 +241,7 @@ export function HomeHero({
       </div>
 
       <div className="relative px-4 pt-10 text-center md:pt-14">
-        <span className="mx-auto mb-4 block h-[52px] w-[40px] text-ink md:mb-5 md:h-[62px] md:w-[48px]">
+        <span className="mx-auto mb-4 block h-[50px] w-[52px] text-ink md:mb-5 md:h-[60px] md:w-[63px]">
           <DoopMark animated size="fill" className="block" />
         </span>
         <h1 className="font-hero text-title font-light leading-none md:text-display">

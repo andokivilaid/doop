@@ -4,7 +4,8 @@ import { canEditOpenCanvas, pickedSelectors, roleOf, useStore } from '../lib/sto
 import { followPageInUrl } from '../lib/pageUrl'
 import { MOD_KEY, PRESENT_SHORTCUT_HINT, isControlTarget, isTypingTarget } from '../lib/keys'
 import { enterSelection, exitSelection, selectSibling } from '../lib/selectionKeys'
-import { dispatchActionKey, setActionHost, type ActionHost } from '../lib/actions/registry'
+import { chordHint, firstChord } from '../lib/actions/chords'
+import { ACTIONS, dispatchActionKey, setActionHost, type ActionHost } from '../lib/actions/registry'
 import { presentStartFrame } from '../lib/present'
 import { canHideUi, hideUiHinted } from '../lib/hideUi'
 import { connect, disconnect, sendWs } from '../lib/ws'
@@ -31,7 +32,6 @@ import {
   barPrimaryBtn,
   barPrimaryCompactBtn,
 } from '../components/TopBar'
-import { LivePresence } from '../components/LivePresence'
 import { ensureTab, openExternal } from '../lib/desktop'
 import { Stage } from '../components/Stage'
 import {
@@ -105,10 +105,12 @@ import {
   PlayIcon,
   PlusIcon,
   PrototypeModeIcon,
+  SearchIcon,
   ShareIcon,
   ShareUpIcon,
   XIcon,
 } from '../components/ui/icons'
+import { Kbd } from '../components/ui/kbd'
 import { Badge, badgeVariants } from '../components/ui/badge'
 import { Pressable } from '../components/ui/pressable'
 import {
@@ -839,6 +841,7 @@ export function CanvasPage({
     image: avatarUrl(session?.user.image),
     color: presences[me.clientId]?.color ?? 'var(--brand)',
   }
+  const paletteChord = firstChord(ACTIONS.find((a) => a.id === 'palette')?.keys)
 
   function openConnect() {
     posthog.capture('agent_connection_opened')
@@ -912,17 +915,43 @@ export function CanvasPage({
             )}
           </BarPill>
         </div>
-        <div className={cn('absolute left-1/2 -translate-x-1/2 max-[1180px]:hidden', docked ? 'top-1' : 'top-3.5')}>
-          <LivePresence me={meFace} others={others} onRenameSelf={() => setRenaming(true)} />
-        </div>
-        <div className="ml-auto flex flex-none items-center gap-2 max-md:hidden">
-          {/* the presence pill needs the bar's centre; narrower desktops keep
-              the plain avatar stack (and its follow buttons) over here */}
-          <div
-            className="mr-1 flex items-center min-[1181px]:hidden"
-            title={others.map((p) => p.name).join(', ') || t('canvas.justYou')}
+        <div
+          className={cn(
+            'mx-auto min-w-[140px] max-w-[260px] flex-1 max-md:hidden min-[1140px]:absolute min-[1140px]:left-1/2 min-[1140px]:w-[clamp(260px,26vw,380px)] min-[1140px]:max-w-none min-[1140px]:flex-none min-[1140px]:-translate-x-1/2',
+            docked ? 'min-[1140px]:top-[7px]' : 'min-[1140px]:top-3.5',
+          )}
+        >
+          <Button
+            variant="bare"
+            className={cn(
+              'w-full justify-start gap-2 text-[12px] font-normal text-ink-faint hover:text-ink-soft',
+              docked
+                ? 'h-[30px] rounded-[7px] border border-line bg-sub/80 px-2.5 hover:border-line hover:bg-paper-deep'
+                : 'h-9 rounded-[10px] bg-surface px-3 shadow-ring hover:bg-paper-deep',
+            )}
+            onClick={() => setPaletteOpen(true)}
+            aria-label={t('actions.palette')}
+            title={
+              paletteChord
+                ? `${t('actions.palettePlaceholder')} (${chordHint(paletteChord)})`
+                : t('actions.palettePlaceholder')
+            }
           >
-            <PresenceFace name={meFace.name} image={meFace.image} color={meFace.color} kind="user" />
+            <SearchIcon width={13} height={13} className="flex-none text-ink-faint" />
+            <span className="min-w-0 flex-1 truncate text-left">{t('actions.palettePlaceholder')}</span>
+            {paletteChord && <Kbd>{chordHint(paletteChord)}</Kbd>}
+          </Button>
+        </div>
+        <div className="flex flex-none items-center gap-2 max-md:hidden min-[1140px]:ml-auto">
+          <div className="mr-1 flex items-center" title={others.map((p) => p.name).join(', ') || t('canvas.justYou')}>
+            <button
+              type="button"
+              className="relative z-[1] rounded-full transition-transform hover:z-10 hover:-translate-y-px focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-faint"
+              title={t('canvas.youAre', { name: meFace.name })}
+              onClick={() => setRenaming(true)}
+            >
+              <PresenceFace name={meFace.name} image={meFace.image} color={meFace.color} kind="user" />
+            </button>
             <span className="-ml-[7px] flex items-center">
               <PeerAvatars others={others} />
             </span>
@@ -1015,6 +1044,17 @@ export function CanvasPage({
               <span className="sm:hidden">{t('canvas.connectAiShort')}</span>
             </Button>
           )}
+          <Tooltip label={t('actions.palette')} side="bottom">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={barIconBtn}
+              aria-label={t('actions.palette')}
+              onClick={() => setPaletteOpen(true)}
+            >
+              <SearchIcon className="size-4" />
+            </Button>
+          </Tooltip>
           <Tooltip label={t('canvas.canvasActions')} side="bottom" align="end">
             <Button
               variant="ghost"
@@ -1088,9 +1128,7 @@ export function CanvasPage({
               </Button>
             )}
           </div>
-          {/* the presence pill in the bar already carries each agent's status
-              line; this per-agent stack is only for windows too narrow for it */}
-          <WorkingNow style={{ left: chrome.left }} className="min-[1180px]:hidden" />
+          <WorkingNow style={{ left: chrome.left }} />
           {!readOnly && <Onboarding canvasId={canvasId} />}
           <IosAppPrompt />
           <AccessBanner guest={guest} onSignUp={onSignUp} onSignIn={onSignIn} />

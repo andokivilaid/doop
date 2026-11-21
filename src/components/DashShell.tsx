@@ -33,6 +33,11 @@ import { DOWNLOAD_URL, WEBSITE_URL } from '../lib/siteLinks'
 /** The account menu the signed-in shell repeats on every page: in the rail
  *  and in the settings header. It lives here so they cannot drift apart. */
 
+/* fork: hide the plan badge and external Doop links on this self-hosted instance
+   (flip to bring them back) */
+const SHOW_ACCOUNT_PLAN = false
+const SHOW_ACCOUNT_EXTERNAL_LINKS = false
+
 export function AccountMenu({
   face = false,
   side,
@@ -98,21 +103,25 @@ export function AccountMenu({
         </DropdownMenuLabel>
         {/* the plan is a workspace thing; this line says which side of it the
             account is on — a member of a live paid workspace is on Pro */}
-        <div className="mx-2.5 mb-2 flex items-center gap-[7px] text-caption text-ink-soft">
-          {me?.plan === 'team' ? (
-            <>
-              <Badge tone="accent">pro</Badge> {t('plans.proPlan')}
-            </>
-          ) : (
-            <>
-              <Badge>free</Badge> {t('plans.freePlan')}
-            </>
-          )}
-        </div>
-        {offersUpgrade(me) && (
-          <DropdownMenuItem onSelect={() => openUpgrade({ source: 'account-menu' })}>
-            <RocketIcon size="rail" /> {t('plans.upgradeToPro')}
-          </DropdownMenuItem>
+        {SHOW_ACCOUNT_PLAN && (
+          <>
+            <div className="mx-2.5 mb-2 flex items-center gap-[7px] text-caption text-ink-soft">
+              {me?.plan === 'team' ? (
+                <>
+                  <Badge tone="accent">pro</Badge> {t('plans.proPlan')}
+                </>
+              ) : (
+                <>
+                  <Badge>free</Badge> {t('plans.freePlan')}
+                </>
+              )}
+            </div>
+            {offersUpgrade(me) && (
+              <DropdownMenuItem onSelect={() => openUpgrade({ source: 'account-menu' })}>
+                <RocketIcon size="rail" /> {t('plans.upgradeToPro')}
+              </DropdownMenuItem>
+            )}
+          </>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => navigate('/settings')}>
@@ -130,25 +139,29 @@ export function AccountMenu({
             </a>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem asChild>
-          <a href="/docs" target="_blank" rel="noopener noreferrer">
-            <HelpIcon size="rail" /> {t('shell.helpDocs')}
-          </a>
-        </DropdownMenuItem>
-        {/* new tabs, which the desktop shell hands to the system browser
-            (initDesktopShell); the desktop app has nothing to download */}
-        {!isDesktopShell() && (
-          <DropdownMenuItem asChild>
-            <a href={DOWNLOAD_URL} target="_blank" rel="noopener noreferrer">
-              <DesktopIcon size="rail" /> {t('shell.desktopApp')}
-            </a>
-          </DropdownMenuItem>
+        {SHOW_ACCOUNT_EXTERNAL_LINKS && (
+          <>
+            <DropdownMenuItem asChild>
+              <a href="/docs" target="_blank" rel="noopener noreferrer">
+                <HelpIcon size="rail" /> {t('shell.helpDocs')}
+              </a>
+            </DropdownMenuItem>
+            {/* new tabs, which the desktop shell hands to the system browser
+                (initDesktopShell); the desktop app has nothing to download */}
+            {!isDesktopShell() && (
+              <DropdownMenuItem asChild>
+                <a href={DOWNLOAD_URL} target="_blank" rel="noopener noreferrer">
+                  <DesktopIcon size="rail" /> {t('shell.desktopApp')}
+                </a>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem asChild>
+              <a href={WEBSITE_URL} target="_blank" rel="noopener noreferrer">
+                <ExportIcon size="rail" /> {t('shell.website')}
+              </a>
+            </DropdownMenuItem>
+          </>
         )}
-        <DropdownMenuItem asChild>
-          <a href={WEBSITE_URL} target="_blank" rel="noopener noreferrer">
-            <ExportIcon size="rail" /> {t('shell.website')}
-          </a>
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         {/* the theme is one click from every page; picking one keeps the menu
             open so the change can be seen, and judged, before it closes */}
