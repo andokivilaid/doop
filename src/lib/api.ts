@@ -134,6 +134,13 @@ import type {
   CustomAgentInput,
   CustomAgentPatch,
 } from '../../shared/customAgents'
+import type {
+  BuiltInSkill,
+  BuiltInSkillPatch,
+  CustomSkill,
+  CustomSkillInput,
+  CustomSkillPatch,
+} from '../../shared/agentSkills'
 import type { AgentRole } from '../../shared/agents'
 import type { DesignToken, DesignTokenInput, ThemeRename, TokenEdit, TokenResult } from '../../shared/designTokens'
 
@@ -236,6 +243,23 @@ export interface RepoManifest {
 export interface GithubImportResult {
   cards: string[]
   rejected: string[]
+}
+
+export interface GithubPrExportInput {
+  frameIds?: string[]
+  format?: 'tsx' | 'html'
+  targetDir?: string
+  includeTokens?: boolean
+  branchName?: string
+  title?: string
+}
+
+export interface GithubPrExportResult {
+  prUrl: string
+  prNumber: number
+  branch: string
+  commitSha: string
+  filesWritten: string[]
 }
 
 export interface DiscoveredPage {
@@ -492,6 +516,28 @@ export const api = {
     req<BuiltInAgent>(`/api/agents/builtin/${encodeURIComponent(id)}${agentScope(workspaceId)}`, {
       method: 'DELETE',
     }),
+  /** design & frontend skills: workspace-scoped with an id, personal without */
+  listCustomSkills: (workspaceId?: string) => req<CustomSkill[]>(`/api/agent-skills${agentScope(workspaceId)}`),
+  createCustomSkill: (input: CustomSkillInput, workspaceId?: string) =>
+    req<CustomSkill>(`/api/agent-skills${agentScope(workspaceId)}`, { method: 'POST', body: JSON.stringify(input) }),
+  updateCustomSkill: (slug: string, patch: CustomSkillPatch, workspaceId?: string) =>
+    req<CustomSkill>(`/api/agent-skills/${encodeURIComponent(slug)}${agentScope(workspaceId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    }),
+  deleteCustomSkill: (slug: string, workspaceId?: string) =>
+    req<{ ok: true }>(`/api/agent-skills/${encodeURIComponent(slug)}${agentScope(workspaceId)}`, { method: 'DELETE' }),
+  listBuiltInSkills: (workspaceId?: string) =>
+    req<BuiltInSkill[]>(`/api/agent-skills/builtin${agentScope(workspaceId)}`),
+  updateBuiltInSkill: (slug: string, patch: BuiltInSkillPatch, workspaceId?: string) =>
+    req<BuiltInSkill>(`/api/agent-skills/builtin/${encodeURIComponent(slug)}${agentScope(workspaceId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    }),
+  resetBuiltInSkill: (slug: string, workspaceId?: string) =>
+    req<BuiltInSkill>(`/api/agent-skills/builtin/${encodeURIComponent(slug)}${agentScope(workspaceId)}`, {
+      method: 'DELETE',
+    }),
   rotateWebhookSecret: (id: string) => req<{ secret: string }>(`/api/webhooks/${id}/rotate`, { method: 'POST' }),
   testWebhook: (id: string) => req<WebhookDeliveryResult>(`/api/webhooks/${id}/test`, { method: 'POST' }),
   notificationSettings: () => req<NotificationSettings>('/api/notifications'),
@@ -574,6 +620,11 @@ export const api = {
     req<GithubImportResult>(`/api/canvases/${canvasId}/github/${connId}/import`, {
       method: 'POST',
       body: JSON.stringify({ screens, design_system: designSystem }),
+    }),
+  pushGithubPr: (canvasId: string, connId: string, input: GithubPrExportInput) =>
+    req<GithubPrExportResult>(`/api/canvases/${canvasId}/github/${connId}/pr`, {
+      method: 'POST',
+      body: JSON.stringify(input),
     }),
   guidelineHistory: (canvasId: string, name: string) =>
     req<{ markdown: string; savedAt: number; savedBy: string }[]>(

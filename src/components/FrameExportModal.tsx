@@ -1,5 +1,7 @@
 import { readingOrder } from '../../shared/frameOrder'
+import type { CodeExportFormat } from '../../shared/codeExport'
 import type { Frame } from '../../shared/types'
+import { downloadSingleCodeExport } from '../lib/codeExportClient'
 import {
   downloadElementExport,
   downloadFrameExport,
@@ -12,13 +14,24 @@ import { ExportOptions } from './ExportOptions'
 import { AppIcon } from './ui/brand-mark'
 import { Button } from './ui/button'
 import { ChoiceList, ChoiceRow } from './ui/choice-list'
-import { ImportIcon } from './ui/icons'
+import { BracesIcon, CodeIcon, ImportIcon } from './ui/icons'
 import { Modal, ModalActions, ModalLede, ModalTitle } from './ui/modal'
 import { useT } from '@/lib/i18n'
 import { trackExport } from '../lib/exportEvents'
 
+function CodeTile({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      aria-hidden
+      className="grid size-8 flex-none place-items-center rounded-control bg-ink text-surface shadow-ring"
+    >
+      {children}
+    </span>
+  )
+}
+
 /** A frame's own export, or one element's: the scale to render at, then
- *  its formats as a list, each row downloads. */
+ *  its image, PDF and production code formats as a list, each row downloads. */
 export function FrameExportModal({
   frame,
   groupFrames = [frame],
@@ -36,8 +49,6 @@ export function FrameExportModal({
   const t = useT()
   const settings = useExportSettings()
 
-  /* the row picked is remembered as the format, so the Inspector's Export
-     starts from it too */
   function download(format: FrameExportFormat) {
     setExportSettings({ format })
     trackExport(format, 1, element ? 'element_menu' : 'frame_menu', element ? 'element' : 'frame')
@@ -49,6 +60,11 @@ export function FrameExportModal({
   function downloadPdf() {
     trackExport('pdf', groupFrames.length, 'frame_menu')
     void downloadFramesPdf(frame.canvasId, readingOrder(groupFrames))
+    onClose()
+  }
+
+  function downloadCode(format: CodeExportFormat) {
+    downloadSingleCodeExport(frame, format, element ? 'element_menu' : 'frame_menu', element)
     onClose()
   }
 
@@ -97,6 +113,28 @@ export function FrameExportModal({
             onClick={downloadPdf}
           />
         )}
+        <ChoiceRow
+          icon={
+            <CodeTile>
+              <BracesIcon size={16} />
+            </CodeTile>
+          }
+          title={t('panels.frameExportReact')}
+          description={t('panels.frameExportReactHint')}
+          trailing={downloadMark}
+          onClick={() => downloadCode('tsx')}
+        />
+        <ChoiceRow
+          icon={
+            <CodeTile>
+              <CodeIcon size={16} />
+            </CodeTile>
+          }
+          title={t('panels.frameExportCleanHtml')}
+          description={t('panels.frameExportCleanHtmlHint')}
+          trailing={downloadMark}
+          onClick={() => downloadCode('html')}
+        />
       </ChoiceList>
       <ModalActions>
         <Button variant="ghost" onClick={onClose}>

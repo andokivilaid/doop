@@ -81,6 +81,42 @@ async function ghJson<T>(token: string, path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
+async function ghWrite(
+  token: string,
+  method: 'POST' | 'PATCH' | 'PUT',
+  path: string,
+  body: Record<string, unknown>,
+): Promise<Response> {
+  return fetch(env.GITHUB_API_URL + path, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'Content-Type': 'application/json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'doop-sync',
+    },
+    body: JSON.stringify(body),
+  })
+}
+
+async function ghWriteError(res: Response, fallbackContext: string): Promise<Error> {
+  let detail = ''
+  try {
+    const parsed = (await res.json()) as { message?: string }
+    if (parsed?.message) detail = `: ${parsed.message}`
+  } catch {
+    /* ignore non-json error body */
+  }
+  if (res.status === 401) return new Error('GitHub rejected the token — reconnect the repository with a valid token')
+  if (res.status === 403 || res.status === 404) {
+    return new Error(
+      `GitHub refused write access (${res.status}) — ensure the fine-grained PAT or GitHub App has "Contents: Read and write" and "Pull requests: Read and write" permissions on this repository${detail}`,
+    )
+  }
+  return new Error(`${fallbackContext} (${res.status}${detail})`)
+}
+
 /* ------------------------------------------------------------------ */
 /* Connection CRUD                                                     */
 
@@ -517,4 +553,186 @@ export function markSynced(connectionId: string): void {
 /** Frames imported by a connection, for the import modal's per-repo count. */
 export function importedFrameCount(canvas: { frames: Frame[] }, connectionId: string): number {
   return canvas.frames.filter((f) => githubFrameMarker(f.html)?.connectionId === connectionId).length
+}
+
+/* ------------------------------------------------------------------ */
+/* Two-way sync: push tokens & exported components to a GitHub PR      */
+
+export interface RepoWriteFile {
+  path: string
+  content: string
+}
+
+export interface PushPrInput {
+  files: RepoWriteFile[]
+  branchName?: string
+  commitMessage: string
+  prTitle: string
+  prBody: string
+}
+
+export interface PushPrResult {
+  prUrl: string
+  prNumber: number
+  branch: string
+  commitSha: string
+  filesWritten: string[]
+}
+
+/** Normalize a user-supplied repo target directory ("" = repo root). */
+export function normalizeRepoTargetDir(raw: unknown, fallback = 'src/components/doop'): string {
+  if (raw === undefined || raw === null) return fallback
+  const trimmed = String(raw)
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+  if (!trimmed || trimmed === '.') return ''
+  validateRepoFilePath(`${trimmed}/tokens.css`)
+  return trimmed
+}
+
+function hasControlOrBackslash(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    if (code <= 0x1f || code === 0x7f || code === 0x5c) return true
+  }
+  return false
+}
+
+/** Strict repo-relative path check: no traversal, backslashes, control chars, or .git writes. */
+export function validateRepoFilePath(filePath: string): string {
+  if (!filePath || filePath.length > 240 || hasControlOrBackslash(filePath)) {
+    throw new Error('invalid repository file path')
+  }
+  if (filePath.startsWith('/') || filePath.endsWith('/') || filePath.includes('//')) {
+    throw new Error('repository file path must be relative without leading or trailing slashes')
+  }
+  const parts = filePath.split('/')
+  for (const seg of parts) {
+    if (!seg || seg === '.' || seg === '..' || seg.toLowerCase() === '.git') {
+      throw new Error(`unsafe path segment "${seg}" in repository path`)
+    }
+  }
+  return filePath
+}
+
+export function sanitizeBranchName(raw: unknown): string {
+  const fallback = `doop/design-sync-${nanoid(6).toLowerCase()}`
+  if (typeof raw !== 'string' || !raw.trim()) return fallback
+  const cleaned = raw
+    .trim()
+    .replace(/[^a-zA-Z0-9._/-]+/g, '-')
+    .replace(/\/{2,}/g, '/')
+    .replace(/^[./-]+|[./-]+$/g, '')
+    .slice(0, 80)
+  if (!cleaned || cleaned.includes('..') || cleaned.endsWith('.lock')) return fallback
+  return cleaned
+}
+
+function encodeGitRefSegments(branch: string): string {
+  return branch.split('/').map(encodeURIComponent).join('/')
+}
+
+/** Commit exported files onto a branch and open (or update) a Pull Request against `conn.branch`. */
+export async function pushDesignPullRequest(conn: GithubConnection, input: PushPrInput): Promise<PushPrResult> {
+  if (!input.files.length) throw new Error('nothing to export — include design tokens or at least one frame')
+  const validatedFiles = input.files.map((f) => ({
+    path: validateRepoFilePath(f.path),
+    content: f.content,
+  }))
+  const branch = sanitizeBranchName(input.branchName)
+  if (branch === conn.branch) {
+    throw new Error(`sync branch cannot be the base branch "${conn.branch}" — choose a feature branch name`)
+  }
+
+  const token = await connectionAuth(conn)
+
+  /* 1. Resolve base branch HEAD commit + tree */
+  const baseRef = await ghJson<{ object: { sha: string } }>(
+    token,
+    `/repos/${conn.repo}/git/ref/heads/${encodeGitRefSegments(conn.branch)}`,
+  )
+  const baseCommitSha = baseRef.object.sha
+  const baseCommit = await ghJson<{ tree: { sha: string } }>(
+    token,
+    `/repos/${conn.repo}/git/commits/${encodeURIComponent(baseCommitSha)}`,
+  )
+
+  /* 2. Create Git tree with exported blobs */
+  const treeRes = await ghWrite(token, 'POST', `/repos/${conn.repo}/git/trees`, {
+    base_tree: baseCommit.tree.sha,
+    tree: validatedFiles.map((f) => ({
+      path: f.path,
+      mode: '100644',
+      type: 'blob',
+      content: f.content,
+    })),
+  })
+  if (!treeRes.ok) throw await ghWriteError(treeRes, 'could not create git tree')
+  const createdTree = (await treeRes.json()) as { sha: string }
+
+  /* 3. Create commit parented on baseCommitSha */
+  const commitRes = await ghWrite(token, 'POST', `/repos/${conn.repo}/git/commits`, {
+    message: input.commitMessage.trim() || 'chore(design): sync design tokens and components from Doop',
+    tree: createdTree.sha,
+    parents: [baseCommitSha],
+  })
+  if (!commitRes.ok) throw await ghWriteError(commitRes, 'could not create git commit')
+  const createdCommit = (await commitRes.json()) as { sha: string }
+
+  /* 4. Create branch ref (or fast-forward/update existing sync branch) */
+  const createRefRes = await ghWrite(token, 'POST', `/repos/${conn.repo}/git/refs`, {
+    ref: `refs/heads/${branch}`,
+    sha: createdCommit.sha,
+  })
+  if (createRefRes.status === 422) {
+    const updateRefRes = await ghWrite(
+      token,
+      'PATCH',
+      `/repos/${conn.repo}/git/refs/heads/${encodeGitRefSegments(branch)}`,
+      { sha: createdCommit.sha, force: true },
+    )
+    if (!updateRefRes.ok) throw await ghWriteError(updateRefRes, `could not update branch "${branch}"`)
+  } else if (!createRefRes.ok) {
+    throw await ghWriteError(createRefRes, `could not create branch "${branch}"`)
+  }
+
+  /* 5. Open Pull Request (or reuse existing open PR for this branch) */
+  const prTitle = input.prTitle.trim() || 'Sync design tokens and components from Doop'
+  const prRes = await ghWrite(token, 'POST', `/repos/${conn.repo}/pulls`, {
+    title: prTitle,
+    head: branch,
+    base: conn.branch,
+    body: input.prBody,
+  })
+
+  let prUrl = ''
+  let prNumber = 0
+  if (prRes.ok) {
+    const pr = (await prRes.json()) as { html_url: string; number: number }
+    prUrl = pr.html_url
+    prNumber = pr.number
+  } else if (prRes.status === 422) {
+    const owner = conn.repo.split('/')[0] ?? ''
+    const existing = await ghJson<Array<{ html_url: string; number: number }>>(
+      token,
+      `/repos/${conn.repo}/pulls?state=open&head=${encodeURIComponent(`${owner}:${branch}`)}&base=${encodeURIComponent(conn.branch)}`,
+    )
+    if (existing[0]) {
+      prUrl = existing[0].html_url
+      prNumber = existing[0].number
+    } else {
+      throw await ghWriteError(prRes, 'could not open pull request')
+    }
+  } else {
+    throw await ghWriteError(prRes, 'could not open pull request')
+  }
+
+  markSynced(conn.id)
+  return {
+    prUrl,
+    prNumber,
+    branch,
+    commitSha: createdCommit.sha,
+    filesWritten: validatedFiles.map((f) => f.path),
+  }
 }

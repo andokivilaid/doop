@@ -11,6 +11,7 @@ import { MAX_DECISION_CHARS } from '../shared/designDecisions.ts'
 
 export const GUIDE_TOPICS = [
   'doop-instructions',
+  'skills',
   'images',
   'components',
   'prototypes',
@@ -25,12 +26,13 @@ export type GuideTopic = (typeof GUIDE_TOPICS)[number]
 /** What each topic covers: listed in get_guide's description and at the end of the main guide. */
 export const GUIDE_TOPIC_SUMMARIES: Record<GuideTopic, string> = {
   'doop-instructions': 'the main guide: load it first, before any other Doop tool',
+  skills: 'seeded UI/UX, React + Tailwind v4, WCAG 2.2 accessibility and mobile HIG / Material 3 craft skills',
   images: 'photos, backgrounds, icons, logos, generated images and uploads in full',
   components: 'nesting, variants, overrides, deleting, other canvases and workspace libraries',
   prototypes: 'wiring screens into a clickable flow',
   redesigns: 'redesigning an existing site or page: import, audit, two directions',
   'comments-and-agents': "comment threads, and the built-in Doop Agent's roles",
-  export: 'images and PDF of a frame or one element',
+  export: 'images, PDF, clean HTML, React + Tailwind TSX and implementation briefs',
   'imported-frames': 'frames imported from a GitHub repo or synced from a live app',
 }
 
@@ -612,6 +614,20 @@ ${GUIDE_TOPICS.filter((topic) => topic !== 'doop-instructions')
 
 /** The topics past the main guide, each loaded on its own when a task needs it. */
 const TOPIC_TEXT: Record<Exclude<GuideTopic, 'doop-instructions'>, string> = {
+  skills: `# Design & Frontend Skills — seeded craft rules
+
+Every canvas carries active **Agent Skills** — reusable craft playbooks configured in Workspace → Agents (for workspace canvases) or Settings → Doop Agent (for personal canvases). Three built-in packs ship enabled out of the box:
+
+- **ui-ux-craft** — Typographic hierarchy, optical tracking/leading, \`tabular-nums\`, Gestalt spatial rhythm, surface material discipline, and anti-AI-slop rules.
+- **frontend-react-tailwind-wcag** — Token-first CSS (\`var(--color-*)\` mapping directly to Tailwind v4 \`@theme\`), semantic HTML landmarks, WCAG 2.2 AA/AAA contrast, non-color status cues, and truncation-safe flex/grid layouts.
+- **mobile-hig-m3** — Apple HIG (iOS safe areas, \`44pt\` touch targets, bottom sheets/tab bars) and Material 3 Expressive (\`48dp\` targets, tonal surface elevation, top SearchBar + pill nav + FAB).
+
+Teams can edit any built-in pack, toggle one off, or add custom workspace/personal skill packs.
+
+- \`get_canvas\` automatically returns every enabled skill in \`skills\` (including its \`instructions\` markdown), so you already have them as soon as you inspect a canvas.
+- Call \`list_skills({ canvas_id })\` to inspect both enabled and disabled packs, or \`get_skill({ canvas_id, slug })\` (\`slug: "all"\` for every active pack) if a long session compacted earlier context.
+- Precedence: canvas-specific style guides (\`get_guidelines\`) and pinned style references (\`get_reference\`) outrank general skill rules whenever a brand intentionally departs from a default convention.
+`,
   images: `# Images — search first, then upload
 
 Real imagery is what separates an appealing design from a wireframe. Frames can load
@@ -803,6 +819,7 @@ at the frame's own size. Pass frame_ids to bind several frames of one canvas int
 PDF; pages follow the order given (frame_id first, then frame_ids as listed).
 For one element of a frame (a card, a logo, a chart) use export_layer: the frame renders whole and is
 cut to that element's box. Name it by element_id (its data-doop-id) or a CSS selector.
+For production code handoff, call export_frame_code({ frame_id, format: "tsx" | "html" | "brief", element_id?, include_tokens? }): it strips internal data-doop-* attributes, maps inline styles and CSS custom properties onto clean React + Tailwind v4 components (plus tokens.css), or builds a complete implementation brief.
 `,
   'imported-frames': `# Imported frames\n\n## From a GitHub repo — the repo is the source of truth
 

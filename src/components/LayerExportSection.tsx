@@ -3,11 +3,12 @@ import { fitExportScale, formatExportScale } from '../../shared/exportScale'
 import { trackExport, trackPngCopy } from '../lib/exportEvents'
 import { setExportSettings, useExportSettings } from '../lib/exportSettings'
 import { copyElementPng, downloadElementExport, type ElementTarget } from '../lib/frameExport'
+import { copyAgentImplementationBrief, copyFrameCode } from '../lib/codeExportClient'
 import { useT } from '../lib/i18n'
 import { cn } from '@/lib/utils'
 import { ExportOptions } from './ExportOptions'
 import { Button } from './ui/button'
-import { DownloadIcon } from './ui/icons'
+import { CodeIcon, DownloadIcon, SparkIcon } from './ui/icons'
 import { PropertySection } from './ui/property-field'
 
 const actionClass =
@@ -45,6 +46,29 @@ export function LayerExportSection({ frame, target }: { frame: Frame; target: El
           }}
         >
           {t('inspector.copyPng')}
+        </Button>
+        <Button
+          variant="bare"
+          className={cn(actionClass, 'min-w-0 gap-1.5')}
+          onClick={() => void copyFrameCode(frame, 'tsx', 'element_panel', target)}
+        >
+          <CodeIcon className="size-3.5 flex-none" />
+          <span className="truncate">{t('inspector.copyReactTailwind')}</span>
+        </Button>
+        <Button
+          variant="bare"
+          className={cn(actionClass, 'min-w-0 gap-1.5')}
+          onClick={() => void copyFrameCode(frame, 'html', 'element_panel', target)}
+        >
+          <span className="truncate">{t('inspector.copyCleanHtml')}</span>
+        </Button>
+        <Button
+          variant="bare"
+          className={cn(actionClass, 'min-w-0 gap-1.5')}
+          onClick={() => void copyAgentImplementationBrief(frame, 'element_panel', target)}
+        >
+          <SparkIcon className="size-3.5 flex-none" />
+          <span className="truncate">{t('inspector.copyAgentBrief')}</span>
         </Button>
       </div>
     </PropertySection>

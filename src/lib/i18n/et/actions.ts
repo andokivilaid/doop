@@ -27,6 +27,9 @@ export const actions: Catalog['actions'] = {
   versionHistory: 'Näita versiooniajalugu',
   export: 'Ekspordi…',
   exportPdf: 'Ekspordi raamid PDF-ina…',
+  copyCleanHtml: 'Kopeeri puhta HTML-ina',
+  copyReactTailwind: 'Kopeeri React + Tailwindina',
+  copyAgentBrief: 'Kopeeri agendi lähteülesanne',
 
   /* Edit */
   undo: 'Võta tagasi',

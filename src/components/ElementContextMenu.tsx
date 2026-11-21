@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { Frame } from '../../shared/types'
 import { copyElementLink } from '../lib/elementLink'
 import { copyElementPng, type ElementTarget } from '../lib/frameExport'
+import { copyAgentImplementationBrief, copyFrameCode } from '../lib/codeExportClient'
 import { useExportSettings } from '../lib/exportSettings'
 import { copyPicked, hasElementClip, pasteLayer } from '../lib/elementClipboard'
 import { writeCanvasClipboard } from '../lib/canvasClipboard'
@@ -206,6 +207,26 @@ function ElementMenuItems({ frame, selector, hit, onRename, onExport }: ElementI
             }}
           >
             {t('stage.copyHtml')}
+          </ContextMenuItem>
+          <ContextMenuItem
+            onSelect={() => void copyFrameCode(frame, 'html', 'element_menu', exportTarget(frame, selector))}
+          >
+            {t('stage.copyCleanHtml')}
+          </ContextMenuItem>
+          <ContextMenuItem
+            onSelect={() => void copyFrameCode(frame, 'tsx', 'element_menu', exportTarget(frame, selector))}
+          >
+            {t('stage.copyReactTailwind')}
+          </ContextMenuItem>
+          <ContextMenuItem
+            onSelect={() =>
+              void copyAgentImplementationBrief(frame, 'element_menu', {
+                ...exportTarget(frame, selector),
+                elementId: hit?.elementId,
+              })
+            }
+          >
+            {t('stage.copyAgentBrief')}
           </ContextMenuItem>
           <ContextMenuItem onSelect={() => navigator.clipboard.writeText(selector).catch(console.error)}>
             {t('stage.copySelector')}

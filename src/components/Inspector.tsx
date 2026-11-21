@@ -4,6 +4,7 @@ import { useStore } from '../lib/store'
 import { api, errorMessage } from '../lib/api'
 import { beginFrameSave } from '../lib/frameSaves'
 import { copyFramePng, downloadFrameExport, downloadFrameHtml } from '../lib/frameExport'
+import { copyAgentImplementationBrief, copyFrameCode } from '../lib/codeExportClient'
 import { setExportSettings, useExportSettings } from '../lib/exportSettings'
 import { fitExportScale, formatExportScale } from '../../shared/exportScale'
 import { ExportOptions } from './ExportOptions'
@@ -327,6 +328,27 @@ export function Inspector({
               }}
             >
               {copiedUrl ? t('common.copied') : t('inspector.copyImageUrl')}
+            </Button>
+            <Button
+              variant="bare"
+              className={cn(fillBtn, 'col-span-2')}
+              onClick={() => void copyFrameCode(frame, 'tsx', 'inspector')}
+            >
+              {t('inspector.copyReactTailwind')}
+            </Button>
+            <Button
+              variant="bare"
+              className={cn(fillBtn, 'col-span-2')}
+              onClick={() => void copyFrameCode(frame, 'html', 'inspector')}
+            >
+              {t('inspector.copyCleanHtml')}
+            </Button>
+            <Button
+              variant="bare"
+              className={cn(fillBtn, 'col-span-2')}
+              onClick={() => void copyAgentImplementationBrief(frame, 'inspector')}
+            >
+              {t('inspector.copyAgentBrief')}
             </Button>
           </div>
         </InspectorGroup>

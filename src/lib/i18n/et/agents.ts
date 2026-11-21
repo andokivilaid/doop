@@ -55,4 +55,41 @@ export const agents: Catalog['agents'] = {
   save: 'Salvesta',
   create: 'Lisa agent',
   saving: 'Salvestamine…',
+  skillsTitle: 'Disaini- ja frontend-oskused',
+  skillsDescriptionWorkspace:
+    'Käsitööreeglid, mis saadetakse automaatselt igale MCP koodiagendile ja Doop Agentile selle tööruumi lõuenditel.',
+  skillsDescriptionPersonal:
+    'Käsitööreeglid, mis saadetakse automaatselt igale MCP koodiagendile ja Doop Agentile sinu isiklikel lõuenditel.',
+  skillsDescriptionRest:
+    'Lülita sisseehitatud pakke sisse või välja, kohanda reegleid oma tehnoloogiapinu järgi või lisa enda omi.',
+  skillsBuiltIn: 'Sisseehitatud pakid',
+  skillsBuiltInNote:
+    'Sisselülitatud pakid liiguvad kaasa get_canvas vastuses ja agendi jooksutustes, et tüpograafia, disainimärkide, WCAG ja mobiilireeglid rakenduksid kohe.',
+  skillsToggle: 'Luba {name}',
+  skillsAdd: 'Lisa oskus',
+  skillsCreate: 'Lisa oskus',
+  skillsCount: { one: '{count} kohandatud oskus', other: '{count} kohandatud oskust' },
+  skillsFull: 'Kohandatud oskuste piir ({count}) on täis. Uue lisamiseks eemalda üks.',
+  skillsEmptyTitle: 'Kohandatud oskusi veel pole',
+  skillsEmptyPersonal:
+    'Lisa oma isiklike lõuendite jaoks repopõhised frontend-tavad (nt shadcn/ui, Vue, Svelte või animatsioonireeglid).',
+  skillsEmptyWorkspace:
+    'Lisa kogu tööruumi lõuendite jaoks ühised frontend-tavad (nt komponentide impordid, CSS-arhitektuur või tõlkereeglid).',
+  skillsLoadFailed: 'Agendi oskusi ei õnnestunud laadida.',
+  skillsSaveFailed: 'Oskust ei õnnestunud salvestada. Proovi uuesti.',
+  skillsRemoveFailed: 'Oskust ei õnnestunud eemaldada. Proovi uuesti.',
+  skillsRemoveTitle: 'Kas eemaldad oskuse {name}?',
+  skillsRemoveDescription: 'Ühendatud agendid ei saa seda oskuspakki enam uutel jooksutustel.',
+  skillsAddTitle: 'Lisa kohandatud oskus',
+  skillsBuiltInLede: 'Kohanda seda sisseehitatud oskuspakki oma lõuendite jaoks. Lähtesta taastab algsed reeglid.',
+  skillsFormLede:
+    'Praktilised Markdown-reeglid, mis saadetakse automaatselt ühendatud koodiagentidele ja Doop Agentile.',
+  skillsTitlePlaceholder: 'Disainisüsteemi reeglid',
+  skillsSlug: 'Tunnus',
+  skillsSlugFixedHint: 'Tunnus jääb pärast loomist samaks, et get_skill päringud püsiksid töökindlad.',
+  skillsSummaryPlaceholder: 'Komponentide impordid, vahemärgid ja vormide valideerimise mustrid',
+  skillsMarkdown: 'Oskuse reeglid (Markdown)',
+  skillsMarkdownPlaceholder: '### Komponentide tavad\n- Eelista semantilisi <button> ja <dialog> elemente…',
+  skillsMarkdownHint:
+    '{used} / {max} märki. Kirjuta konkreetsed reeglid, mida agendid saavad kontrollida nii pildil kui ka koodis.',
 }

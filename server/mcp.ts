@@ -18,6 +18,25 @@ import { store } from './store.ts'
 import { addPage, savePages, updateFrameMeta } from './pageTools.ts'
 import { fontsForCanvas } from './fonts.ts'
 import { customAgentsForCanvas } from './customAgents.ts'
+import {
+  activeSkillsForCanvas,
+  activeSkillsForScope,
+  hasSeenSkills,
+  listBuiltInSkills,
+  listCustomSkills,
+  markSkillsSeen,
+  skillsBrief,
+  skillsPromptBlock,
+} from './agentSkills.ts'
+import {
+  componentFileName,
+  exportAgentBrief,
+  exportCleanHtml,
+  exportReactTailwind,
+  exportTokensCssFile,
+  extractElementByDoopId,
+  htmlFileName,
+} from '../shared/codeExport.ts'
 import { describeLibrary, libraryBrief, MAX_FONT_BYTES } from '../shared/fonts.ts'
 import { addCanvasFont, uploadedFontResult } from './canvasFontUpload.ts'
 import { EMBEDDED_MIN_LENGTH, inlineDataRefusal } from './inlineData.ts'
@@ -131,7 +150,7 @@ You MUST call get_guide({ topic: "doop-instructions" }) before using other Doop 
 - HUMAN FEEDBACK blocks in tool results are requests from people on the canvas: handle them before your own plan.
 - Tokens: colours, fonts and sizes are var(--name) from the canvas's design tokens. No tokens yet: create_tokens before the first frame. Never a palette on a frame's :root.
 - Components: before the first screen, set up the canvas's component system with create_components (primitives like Button and Input, patterns like nav and card), then compose screens from it. Anything get_canvas lists goes in as <doop-use component="Name" …>, never redrawn.
-- Style guides: read the canvas's with get_guidelines before designing, and follow them.
+- Style guides & skills: read style guides via get_guidelines and apply get_canvas's \`skills\` before designing.
 - Create with create_frame, then stream append_frame_html one section per call. Small changes: edit_frame_html. Rename, move, resize: update_frame.
 - After every create or significant edit, call get_frame_screenshot and fix what looks wrong.
 - Keep every data-doop-* attribute when you rewrite markup: comments, links and prototype wiring hang on them.
@@ -246,6 +265,23 @@ function withGuidelinesNudge<T extends { content: { type: 'text' | 'image'; [k: 
   result.content.push({
     type: 'text' as const,
     text: `This canvas has style guides you have not read: ${docs.map((d) => d.name).join(', ')}. Call get_guidelines({ canvas_id, name }) for each relevant one NOW and make your design follow them.`,
+  })
+  return result
+}
+
+/** Delivers active design & frontend skills once if an agent writes a frame before calling get_canvas or get_skill. */
+function withSkillsNudge<T extends { content: { type: 'text' | 'image'; [k: string]: unknown }[] }>(
+  result: T,
+  canvasId: string,
+  actor?: Actor,
+): T {
+  if (!actor || hasSeenSkills(canvasId, actor.name)) return result
+  const skills = activeSkillsForCanvas(store.getCanvas(canvasId))
+  markSkillsSeen(canvasId, actor.name)
+  if (skills.length === 0) return result
+  result.content.push({
+    type: 'text' as const,
+    text: `${skillsPromptBlock(skills)}\n\n(Seeded once for this canvas; call get_skill({ canvas_id }) any time to re-read.)`,
   })
   return result
 }
@@ -660,6 +696,8 @@ export function buildMcpServer(owner?: string, ownerId?: string, clientName?: st
       const refs = store.getReferences(canvas_id)
       const library = fontsForCanvas(c)
       const customAgents = customAgentsForCanvas(c)
+      const activeSkills = activeSkillsForCanvas(c)
+      if (agent_name) markSkillsSeen(canvas_id, actorFrom(agent_name).name)
       const sharedLibraries = libraryCatalog(c)
       /* one pass over the canvas's frames answers for the catalog and for what was deleted */
       const componentUsage = usageByComponent(c)
@@ -684,6 +722,7 @@ export function buildMcpServer(owner?: string, ownerId?: string, clientName?: st
               'This canvas has style guides. Call get_guidelines for each relevant one BEFORE designing — every frame must follow them.',
             ]
           : []),
+        ...(activeSkills.length ? [skillsBrief(activeSkills)] : []),
         ...(library.length ? [libraryBrief(library)] : []),
         webFontsBrief(),
         ...(tokens.length ? [tokensBrief(tokens, tokenThemes)] : established ? [] : [NO_TOKENS_BRIEF]),
@@ -717,6 +756,17 @@ export function buildMcpServer(owner?: string, ownerId?: string, clientName?: st
               summary: actions.guidelineSummary(d),
               bytes: d.markdown.length,
             })),
+            ...(activeSkills.length
+              ? {
+                  skills: activeSkills.map((s) => ({
+                    slug: s.slug,
+                    title: s.title,
+                    summary: s.summary,
+                    builtIn: s.builtIn,
+                    instructions: s.markdown,
+                  })),
+                }
+              : {}),
             references: refs.map((r) => ({
               id: r.id,
               title: r.title,
@@ -817,6 +867,105 @@ export function buildMcpServer(owner?: string, ownerId?: string, clientName?: st
       }
       if (agent_name) actions.markGuidelinesSeen(canvas_id, actorFrom(agent_name).name)
       return withFeedbackNotice(text(doc.markdown), canvas_id, agent_name ? actorFrom(agent_name) : undefined)
+    },
+  )
+
+  server.registerTool(
+    'list_skills',
+    {
+      title: 'List design & frontend skills',
+      description:
+        "List the design and frontend craft skill packs configured for a canvas's workspace (or the connected account's personal canvases when canvas_id is omitted): built-in packs (UI/UX craft, React + Tailwind v4 + WCAG 2.2, Apple HIG + Material 3) with their enabled state, plus any custom skill packs.",
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: {
+        canvas_id: z.string().optional().describe('Canvas ID to resolve workspace vs personal skill scope'),
+        agent_name: agentName.optional(),
+      },
+    },
+    async ({ canvas_id, agent_name }) => {
+      if (canvas_id) {
+        const c = canvasFor(canvas_id, 'view')
+        if (!c) return noCanvas(canvas_id)
+        const scope = c.workspaceId ? { workspaceId: c.workspaceId } : { personal: true as const }
+        const scopeUser = c.ownerId ?? ownerId ?? ''
+        const builtIn = listBuiltInSkills(scope, scopeUser)
+        const custom = listCustomSkills(scope, scopeUser)
+        return withFeedbackNotice(
+          text({
+            builtIn: builtIn.map(({ slug, title, summary, enabled, edited }) => ({
+              slug,
+              title,
+              summary,
+              enabled,
+              edited,
+            })),
+            custom: custom.map(({ slug, title, summary }) => ({ slug, title, summary })),
+          }),
+          canvas_id,
+          agent_name ? actorFrom(agent_name) : undefined,
+        )
+      }
+      if (!ownerId) return err('pass canvas_id or sign in to list personal skills')
+      const builtIn = listBuiltInSkills({ personal: true }, ownerId)
+      const custom = listCustomSkills({ personal: true }, ownerId)
+      return text({
+        builtIn: builtIn.map(({ slug, title, summary, enabled, edited }) => ({
+          slug,
+          title,
+          summary,
+          enabled,
+          edited,
+        })),
+        custom: custom.map(({ slug, title, summary }) => ({ slug, title, summary })),
+      })
+    },
+  )
+
+  server.registerTool(
+    'get_skill',
+    {
+      title: 'Read design & frontend skill instructions',
+      description:
+        'Read one skill pack in full by slug (e.g. "ui-ux-craft", "frontend-react-tailwind-wcag", "mobile-hig-m3", or a custom skill slug), or omit slug / pass "all" to load all active skill packs for the canvas.',
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: {
+        canvas_id: z.string().optional().describe('Canvas ID whose workspace or owner skills to read'),
+        slug: z
+          .string()
+          .optional()
+          .describe('Skill slug from get_canvas / list_skills, or "all" (default) for every active skill'),
+        agent_name: agentName.optional(),
+      },
+    },
+    async ({ canvas_id, slug, agent_name }) => {
+      const c = canvas_id ? canvasFor(canvas_id, 'view') : undefined
+      if (canvas_id && !c) return noCanvas(canvas_id)
+      const active = c
+        ? activeSkillsForCanvas(c)
+        : ownerId
+          ? activeSkillsForScope({ personal: true }, ownerId)
+          : activeSkillsForCanvas(undefined)
+      if (canvas_id && agent_name) markSkillsSeen(canvas_id, actorFrom(agent_name).name)
+      const wanted = (slug ?? 'all').trim().toLowerCase()
+      if (!wanted || wanted === 'all') {
+        const out = skillsPromptBlock(active) || 'No active skills configured for this scope.'
+        return canvas_id
+          ? withFeedbackNotice(text(out), canvas_id, agent_name ? actorFrom(agent_name) : undefined)
+          : text(out)
+      }
+      const match = active.find((s) => s.slug === wanted)
+      if (!match) {
+        const available = active.map((s) => s.slug)
+        return err(
+          available.length
+            ? `no active skill named "${wanted}" — active skills: ${available.join(', ')}`
+            : 'no active skills configured for this scope',
+        )
+      }
+      const doc = `# ${match.title} (\`${match.slug}\`)\n\n${match.markdown}`
+      return canvas_id
+        ? withFeedbackNotice(text(doc), canvas_id, agent_name ? actorFrom(agent_name) : undefined)
+        : text(doc)
     },
   )
 
@@ -1538,8 +1687,12 @@ export function buildMcpServer(owner?: string, ownerId?: string, clientName?: st
         frame,
         { review: frame.html.length > 0 },
       )
-      return withGuidelinesNudge(
-        withStatusNudge(withFeedback(result, canvas_id, actorFrom(agent_name)), canvas_id, actorFrom(agent_name)),
+      return withSkillsNudge(
+        withGuidelinesNudge(
+          withStatusNudge(withFeedback(result, canvas_id, actorFrom(agent_name)), canvas_id, actorFrom(agent_name)),
+          canvas_id,
+          actorFrom(agent_name),
+        ),
         canvas_id,
         actorFrom(agent_name),
       )
@@ -1601,13 +1754,17 @@ export function buildMcpServer(owner?: string, ownerId?: string, clientName?: st
       const frame = actions.updateFrame(frame_id, { html }, actorFrom(agent_name), { replace: true })
       if (!frame) return noFrame(frame_id)
       return withPreview(
-        withGuidelinesNudge(
-          withStatusNudge(
-            withFeedback(
-              withComponentNotes(
-                withEscapeNote(textWithNudge({ ok: true, frame: frameSummary(frame) }, REVIEW_NUDGE), html),
-                frame,
-                { review: true },
+        withSkillsNudge(
+          withGuidelinesNudge(
+            withStatusNudge(
+              withFeedback(
+                withComponentNotes(
+                  withEscapeNote(textWithNudge({ ok: true, frame: frameSummary(frame) }, REVIEW_NUDGE), html),
+                  frame,
+                  { review: true },
+                ),
+                frame.canvasId,
+                actorFrom(agent_name),
               ),
               frame.canvasId,
               actorFrom(agent_name),
@@ -1668,6 +1825,86 @@ export function buildMcpServer(owner?: string, ownerId?: string, clientName?: st
         height: pixels.height,
         note: 'Public URL, no auth needed. To publish: fetch the URL and upload the bytes to the target platform (e.g. WordPress POST /wp/v2/media), or hotlink it directly — it always shows the current design.',
       })
+    },
+  )
+
+  server.registerTool(
+    'export_frame_code',
+    {
+      title: 'Export frame or element as clean HTML, React + Tailwind TSX, or implementation brief',
+      description:
+        'Export a frame (or one element by data-doop-id) as production-ready code with internal data-doop-* attributes stripped: format "tsx" (default) returns a TypeScript React + Tailwind v4 component; "html" returns clean HTML + CSS custom properties; "brief" returns a Markdown implementation brief with live preview URL, tokens and reference TSX. Set include_tokens=true to also receive tokens.css (@theme + :root).',
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      inputSchema: {
+        frame_id: z.string(),
+        format: z.enum(['tsx', 'html', 'brief']).optional().describe('default tsx'),
+        element_id: z.string().optional().describe("Optional element's data-doop-id to export just that subtree"),
+        include_tokens: z
+          .boolean()
+          .optional()
+          .describe('Include the canvas tokens.css (@theme + :root) alongside exported code'),
+        agent_name: agentName.optional(),
+      },
+    },
+    async ({ frame_id, format = 'tsx', element_id, include_tokens, agent_name }) => {
+      const f = frameFor(frame_id, 'view')
+      if (!f) return noFrame(frame_id)
+      const c = canvasFor(f.canvasId, 'view')
+      if (!c) return noFrame(frame_id)
+      arrive(f.canvasId, agent_name)
+      const tokens = store.getTokens(f.canvasId)
+      const tokenThemes = store.getTokenThemes(f.canvasId)
+      let elementSnippet: string | undefined
+      if (element_id) {
+        const extracted = extractElementByDoopId(f.html, element_id)
+        if (!extracted) return err(`no element with data-doop-id="${element_id}" in frame ${frame_id}`)
+        elementSnippet = extracted
+      }
+      if (format === 'brief') {
+        const brief = exportAgentBrief({
+          canvasId: c.id,
+          canvasName: c.name,
+          origin: env.BETTER_AUTH_URL,
+          frame: f,
+          element: element_id
+            ? {
+                selector: `[data-doop-id="${element_id}"]`,
+                name: element_id,
+                elementId: element_id,
+                html: elementSnippet,
+              }
+            : undefined,
+          tokens,
+          tokenThemes,
+        })
+        return withFeedbackNotice(text(brief), f.canvasId, agent_name ? actorFrom(agent_name) : undefined)
+      }
+      const code =
+        format === 'html'
+          ? exportCleanHtml(f.html, {
+              tokens,
+              tokenThemes,
+              elementHtml: elementSnippet,
+              externalTokensPath: include_tokens ? './tokens.css' : undefined,
+            })
+          : exportReactTailwind(f.html, {
+              componentName: element_id ?? f.name,
+              tokens,
+              tokenThemes,
+              elementHtml: elementSnippet,
+              importTokensPath: include_tokens ? './tokens.css' : undefined,
+            })
+      const fileName = format === 'html' ? htmlFileName(element_id ?? f.name) : componentFileName(element_id ?? f.name)
+      return withFeedbackNotice(
+        text({
+          file_name: fileName,
+          format,
+          code,
+          ...(include_tokens ? { tokens_css: exportTokensCssFile(tokens, tokenThemes) } : {}),
+        }),
+        f.canvasId,
+        agent_name ? actorFrom(agent_name) : undefined,
+      )
     },
   )
 
@@ -2487,7 +2724,11 @@ export function buildMcpServer(owner?: string, ownerId?: string, clientName?: st
       /* nudge only on the first chunk — mid-stream results should stay lean.
          The escape check rides along: the opening chunk decides the stream. */
       const nudged = start
-        ? withGuidelinesNudge(withEscapeNote(result, html_chunk), frame.canvasId, actorFrom(agent_name))
+        ? withSkillsNudge(
+            withGuidelinesNudge(withEscapeNote(result, html_chunk), frame.canvasId, actorFrom(agent_name)),
+            frame.canvasId,
+            actorFrom(agent_name),
+          )
         : result
       return withStatusNudge(
         withFeedback(nudged, frame.canvasId, actorFrom(agent_name)),

@@ -13,6 +13,7 @@ import { AgentKeys } from '../components/AgentKeys'
 import { Webhooks } from '../components/Webhooks'
 import { FontLibrary } from '../components/FontLibrary'
 import { CustomAgents } from '../components/CustomAgents'
+import { AgentSkills } from '../components/AgentSkills'
 import { AccountMenu } from '../components/DashShell'
 import { railLayout } from '../components/AppRail'
 import {
@@ -262,6 +263,7 @@ export function Settings() {
               <ImageModelCard />
               <ImageDescriptionsCard />
               <CustomAgents />
+              <AgentSkills />
             </>
           ) : pane === 'fonts' ? (
             <FontLibrary />
