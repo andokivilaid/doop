@@ -54,6 +54,8 @@ export const auth = {
   redirectingTo: 'Taking you to {provider}…',
   signInAnotherWay: 'Sign in another way',
   signupDisabled: 'Sign-up with email and password is off on this instance.',
+  awaitingApproval:
+    'Your account is waiting for an administrator to approve it. Try signing in again once it has been approved.',
   browserSignInNotice: 'Finish signing in in your browser — doop signs you in here the moment you come back.',
   verificationSent: 'Verification email sent — check your inbox.',
   resetLinkSent: 'If an account exists for that email, a reset link is on its way.',

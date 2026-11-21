@@ -1,0 +1,38 @@
+import type { Catalog } from '..'
+
+export const community: Catalog['community'] = {
+  copyFailed: 'Seda kujundust ei õnnestunud kopeerida',
+  searchGallery: 'Otsi galeriist',
+  title: 'Kogukond',
+  subtitle: {
+    one: '{count} kujundus, mille inimesed on avaldanud kopeerimiseks ja remiksimiseks',
+    other: '{count} kujundust, mille inimesed on avaldanud kopeerimiseks ja remiksimiseks',
+  },
+  sort: 'Sordi',
+  trending: 'Populaarsed',
+  newest: 'Uusimad',
+  shelf: 'Riiul',
+  allCount: 'Kõik · {count}',
+  shelfCount: '{shelf} · {count}',
+  categoryWebsite: 'Veebilehed',
+  categoryApp: 'Veebirakendused',
+  categoryDashboard: 'Töölauad',
+  categoryMobile: 'Mobiil',
+  categoryMarketing: 'Turundus',
+  categoryOther: 'Muu',
+  emptyTitle: 'Riiulid on veel tühjad',
+  emptyDescription:
+    'Igaüks saab lõuendi siia lisada selle jagamismenüüst — inimesed vaatavad seda eelvaates ja kopeerivad oma kontole, originaal jääb aga privaatseks. Ole esimene.',
+  pickCanvas: 'Vali avaldatav lõuend',
+  visibleOf: '{visible}/{total}',
+  noMatch: 'Midagi ei leitud — proovi teist otsingut või riiulit.',
+  noPreview: 'eelvaade puudub',
+  frames: '{count} raami',
+  byAuthor: 'autor {name}',
+  copies: { one: '{count} koopia', other: '{count} koopiat' },
+  copying: 'Kopeerin…',
+  useThis: 'Kasuta seda',
+  published: '{name} · avaldatud {time} · {copies}',
+  copyNote: 'Koopia jõuab sinu lõuendite hulka privaatse koopiana — muuda vabalt, originaal jääb puutumata.',
+  copyToMine: 'Kopeeri minu lõuenditesse',
+}

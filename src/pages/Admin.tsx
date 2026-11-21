@@ -116,7 +116,9 @@ export function Admin() {
     try {
       if (banned) await adminApi.ban(u.id)
       else await adminApi.unban(u.id)
-      setUsers((list) => (list ? list.map((x) => (x.id === u.id ? { ...x, banned } : x)) : list))
+      setUsers((list) =>
+        list ? list.map((x) => (x.id === u.id ? { ...x, banned, pendingApproval: false } : x)) : list,
+      )
     } catch (e) {
       console.error(e)
     }
@@ -145,9 +147,10 @@ export function Admin() {
       c.owner?.name.toLowerCase().includes(needle) ||
       c.owner?.email.toLowerCase().includes(needle),
   )
-  const shownUsers = (users ?? []).filter(
-    (u) => !needle || u.name.toLowerCase().includes(needle) || u.email.toLowerCase().includes(needle),
-  )
+  const shownUsers = (users ?? [])
+    .filter((u) => !needle || u.name.toLowerCase().includes(needle) || u.email.toLowerCase().includes(needle))
+    /* accounts waiting for approval on top (a stable sort keeps newest first) */
+    .sort((a, b) => Number(b.pendingApproval) - Number(a.pendingApproval))
 
   return (
     <DashLayout className={railLayout}>
@@ -322,7 +325,11 @@ export function Admin() {
                     <div className="flex flex-wrap items-center gap-2 font-display text-copy font-semibold">
                       {u.name}
                       {u.role === 'admin' && <Badge tone="admin">{t('admin.roleAdmin')}</Badge>}
-                      {u.banned && <Badge tone="banned">{t('admin.banned')}</Badge>}
+                      {u.pendingApproval ? (
+                        <Badge tone="banned">{t('admin.pendingApproval')}</Badge>
+                      ) : (
+                        u.banned && <Badge tone="banned">{t('admin.banned')}</Badge>
+                      )}
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5 text-body text-ink-faint">
                       <span>{u.email}</span>
@@ -339,13 +346,19 @@ export function Admin() {
                           {t('admin.viewAs')}
                         </Button>
                       )}
-                      <Button
-                        variant={u.banned ? 'ghost' : 'danger'}
-                        size="sm"
-                        onClick={() => setConfirmBan({ user: u, banned: !u.banned })}
-                      >
-                        {u.banned ? t('admin.unban') : t('admin.ban')}
-                      </Button>
+                      {u.pendingApproval ? (
+                        <Button size="sm" onClick={() => void setBanned(u, false)}>
+                          {t('admin.approve')}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant={u.banned ? 'ghost' : 'danger'}
+                          size="sm"
+                          onClick={() => setConfirmBan({ user: u, banned: !u.banned })}
+                        >
+                          {u.banned ? t('admin.unban') : t('admin.ban')}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

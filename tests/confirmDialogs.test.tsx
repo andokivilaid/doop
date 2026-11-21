@@ -95,6 +95,7 @@ const user = (id: string, name: string, banned: boolean): AdminUser => ({
   email: `${id}@example.com`,
   role: null,
   banned,
+  pendingApproval: false,
   createdAt: 0,
   canvasCount: 0,
 })

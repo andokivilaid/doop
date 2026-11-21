@@ -126,6 +126,8 @@ const schema = {
   SIGNUP_EMAIL_DOMAINS: list({ default: [] }),
   ADMIN_EMAILS: list({ default: [] }),
   REQUIRE_EMAIL_VERIFICATION: bool({ default: true }),
+  /* fork: new accounts wait until an admin approves them in /admin */
+  SIGNUP_REQUIRES_APPROVAL: bool({ default: false }),
   OIDC_ISSUER: str({ default: undefined }),
   OIDC_CLIENT_ID: str({ default: undefined }),
   OIDC_CLIENT_SECRET: str({ default: undefined }),

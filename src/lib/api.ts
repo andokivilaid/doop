@@ -1010,6 +1010,8 @@ export interface AdminUser {
   email: string
   role: string | null
   banned: boolean | null
+  /* fork: signed up and still waiting for an admin to approve it */
+  pendingApproval: boolean
   createdAt: number
   canvasCount: number
 }

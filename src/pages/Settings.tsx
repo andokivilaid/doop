@@ -56,8 +56,12 @@ const panes: Record<Pane, { title: PlainMessageKey; blurb: PlainMessageKey }> = 
   appearance: { title: 'settings.appearanceTitle', blurb: 'settings.appearanceBlurb' },
 }
 
+/* fork: billing plans don't apply to this self-hosted instance, so the Plan
+   pane is hidden (flip to bring it back) */
+const SHOW_PLAN_PANE = false
+
 function isPane(value: string | null): value is Pane {
-  return value !== null && value in panes
+  return value !== null && value in panes && (SHOW_PLAN_PANE || value !== 'plan')
 }
 
 /** ?pane= deep-links a section — the connect modal sends people to ?pane=keys. */
@@ -129,14 +133,16 @@ export function Settings() {
           >
             {t('settings.accountTitle')}
           </DashNavItem>
-          <DashNavItem
-            density="rail"
-            icon={<CreditCardIcon size="rail" />}
-            active={pane === 'plan'}
-            onClick={() => setPane('plan')}
-          >
-            {t('plans.settingsTitle')}
-          </DashNavItem>
+          {SHOW_PLAN_PANE && (
+            <DashNavItem
+              density="rail"
+              icon={<CreditCardIcon size="rail" />}
+              active={pane === 'plan'}
+              onClick={() => setPane('plan')}
+            >
+              {t('plans.settingsTitle')}
+            </DashNavItem>
+          )}
           <DashNavItem
             density="rail"
             icon={<MoonIcon size="rail" />}
@@ -223,9 +229,11 @@ export function Settings() {
               <TabsTrigger value="account">
                 <UserIcon size="rail" /> {t('settings.accountTab')}
               </TabsTrigger>
-              <TabsTrigger value="plan">
-                <CreditCardIcon size="rail" /> {t('plans.settingsTitle')}
-              </TabsTrigger>
+              {SHOW_PLAN_PANE && (
+                <TabsTrigger value="plan">
+                  <CreditCardIcon size="rail" /> {t('plans.settingsTitle')}
+                </TabsTrigger>
+              )}
               <TabsTrigger value="appearance">
                 <MoonIcon size="rail" /> {t('settings.appearanceTitle')}
               </TabsTrigger>

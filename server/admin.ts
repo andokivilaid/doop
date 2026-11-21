@@ -7,7 +7,7 @@ import * as authSchema from './db/auth-schema.ts'
 import { listAgentFeedback } from './agentFeedback.ts'
 import { agentFeedback } from './db/schema.ts'
 import * as workspaces from './workspaces.ts'
-import { loadOidcConfig, loginProvidersConfig } from './auth.ts'
+import { PENDING_APPROVAL_REASON, loadOidcConfig, loginProvidersConfig } from './auth.ts'
 import { getInstanceSettings, ssoAdminSignedIn, updateInstanceSettings } from './instanceSettings.ts'
 import { isInstanceSettingsPatch } from '../shared/instanceSettings.ts'
 
@@ -68,6 +68,7 @@ adminRouter.get('/users', async (req, res) => {
       email: authSchema.user.email,
       role: authSchema.user.role,
       banned: authSchema.user.banned,
+      banReason: authSchema.user.banReason,
       createdAt: authSchema.user.createdAt,
     })
     .from(authSchema.user)
@@ -77,7 +78,12 @@ adminRouter.get('/users', async (req, res) => {
   }
   res.json(
     rows
-      .map((u) => ({ ...u, createdAt: u.createdAt.getTime(), canvasCount: owned.get(u.id) ?? 0 }))
+      .map(({ banReason, ...u }) => ({
+        ...u,
+        pendingApproval: u.banned === true && banReason === PENDING_APPROVAL_REASON,
+        createdAt: u.createdAt.getTime(),
+        canvasCount: owned.get(u.id) ?? 0,
+      }))
       .sort((a, b) => b.createdAt - a.createdAt),
   )
 })

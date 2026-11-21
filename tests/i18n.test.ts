@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { en } from '../src/lib/i18n/en'
-import { ptBR } from '../src/lib/i18n/pt-BR'
+import { et } from '../src/lib/i18n/et'
 import type { Catalog, MessageKey } from '../src/lib/i18n'
 
 /* the test runtime has no localStorage; the module only needs get and set */
@@ -52,8 +52,8 @@ function placeholders(message: Message): string[] {
 
 describe('catalogs', () => {
   /* the type already demands every key; this catches what it cannot see */
-  it('gives pt-BR the same keys, the same plural shape and the same placeholders as English', () => {
-    const translated = new Map(entries(ptBR))
+  it('gives et the same keys, the same plural shape and the same placeholders as English', () => {
+    const translated = new Map(entries(et))
     for (const [key, source] of entries(en)) {
       const message = translated.get(key)
       expect(message, key).toBeDefined()
@@ -68,24 +68,24 @@ describe('translateIn', () => {
   it('fills placeholders and picks the plural form for the count', () => {
     expect(i18n.translateIn('en', 'settings.meterLeft', { left: 2, count: 5 })).toBe('2 of 5 free tasks left.')
     expect(i18n.translateIn('en', 'settings.meterLeft', { left: 1, count: 1 })).toBe('1 of 1 free task left.')
-    expect(i18n.translateIn('pt-BR', 'settings.meterLeft', { left: 1, count: 1 })).toBe(
-      '1 de 1 tarefa gratuita restante.',
+    expect(i18n.translateIn('et', 'settings.meterLeft', { left: 1, count: 1 })).toBe(
+      '1-st tasuta ülesandest on alles 1.',
     )
   })
 
   it('falls back to English, then to the key, instead of rendering a blank', () => {
     const missing = 'settings.notThere' as MessageKey
-    expect(i18n.translateIn('pt-BR', missing)).toBe('settings.notThere')
+    expect(i18n.translateIn('et', missing)).toBe('settings.notThere')
   })
 })
 
 describe('locale', () => {
   it("uses the server's default until this browser picks a language", async () => {
-    serverSays({ defaultLocale: 'pt-BR' })
+    serverSays({ defaultLocale: 'et' })
     await i18n.initLocale()
-    expect(i18n.getLocale()).toBe('pt-BR')
-    expect(document.documentElement.lang).toBe('pt-BR')
-    expect(i18n.t('shell.logOut')).toBe('Sair')
+    expect(i18n.getLocale()).toBe('et')
+    expect(document.documentElement.lang).toBe('et')
+    expect(i18n.t('shell.logOut')).toBe('Logi välja')
 
     i18n.setLocale('en')
     expect(i18n.getLocale()).toBe('en')
@@ -94,11 +94,11 @@ describe('locale', () => {
   })
 
   it('does not ask the server when the browser already picked', async () => {
-    store.set('doop-locale', 'pt-BR')
+    store.set('doop-locale', 'et')
     serverSays({ defaultLocale: 'en' })
     await i18n.initLocale()
     expect(fetch).not.toHaveBeenCalled()
-    expect(i18n.getLocale()).toBe('pt-BR')
+    expect(i18n.getLocale()).toBe('et')
   })
 
   it('falls back to English when the server is unreachable or answers nonsense', async () => {

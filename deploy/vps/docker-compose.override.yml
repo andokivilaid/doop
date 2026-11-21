@@ -13,6 +13,8 @@ services:
       # optional agent search keys, read from the root .env when set
       PEXELS_API_KEY: ${PEXELS_API_KEY:-}
       BRANDFETCH_CLIENT_ID: ${BRANDFETCH_CLIENT_ID:-}
+      SIGNUP_REQUIRES_APPROVAL: ${SIGNUP_REQUIRES_APPROVAL:-false}
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-}
     labels:
       traefik.enable: 'true'
       traefik.http.routers.doop.rule: Host(`${DOOP_HOST}`)

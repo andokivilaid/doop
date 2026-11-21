@@ -1,5 +1,5 @@
 import { en } from './en'
-import { ptBR } from './pt-BR'
+import { et } from './et'
 import { getLocale, useLocale, type Locale } from './locale'
 
 export {
@@ -61,7 +61,7 @@ export type PlainMessageKey = { [K in MessageKey]: [ParamsOf<MessageOf<K>>] exte
 
 export type Translate = <K extends MessageKey>(key: K, ...vars: VarsArg<K>) => string
 
-const catalogs: Record<Locale, Catalog> = { en, 'pt-BR': ptBR }
+const catalogs: Record<Locale, Catalog> = { en, et }
 
 type Vars = Record<string, string | number>
 

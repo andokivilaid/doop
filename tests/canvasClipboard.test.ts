@@ -14,7 +14,7 @@ afterEach(() => vi.restoreAllMocks())
 
 it.each([
   ['en', 'Couldn’t copy to the clipboard. Please try again.'],
-  ['pt-BR', 'Não foi possível copiar para a área de transferência. Tente novamente.'],
+  ['et', 'Lõikelauale kopeerimine ebaõnnestus. Proovi uuesti.'],
 ] as const)(
   'reports a refused clipboard write in %s without replacing the saved selection',
   async (locale, message) => {

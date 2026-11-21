@@ -25,7 +25,7 @@ import { components } from './components'
 import { actions } from './actions'
 import { plans } from './plans'
 
-export const ptBR: Catalog = {
+export const et: Catalog = {
   common,
   settings,
   shell,

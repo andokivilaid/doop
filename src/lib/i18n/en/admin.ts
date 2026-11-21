@@ -40,6 +40,8 @@ export const admin = {
   banTitle: 'Ban {name} ({email})?',
   unbanTitle: 'Unban {name} ({email})?',
   banDescription: 'They are signed out everywhere and cannot sign in or use MCP until unbanned.',
+  pendingApproval: 'awaiting approval',
+  approve: 'Approve',
 
   feedbackNav: 'Agent feedback',
   feedbackTab: 'Feedback · {count}',

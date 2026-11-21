@@ -369,6 +369,10 @@ export function AuthPage({ initialMode }: { initialMode?: 'signin' | 'signup' } 
         } else if (mode === 'signup' && code.startsWith('USER_ALREADY_EXISTS')) {
           setError(t('auth.accountExists'))
           setSuggestMode('signin')
+        } else if (code === 'BANNED_USER') {
+          /* fork: SIGNUP_REQUIRES_APPROVAL — a fresh signup is created
+             waiting, and a sign-in before approval lands here too */
+          setNotice(t('auth.awaitingApproval'))
         } else if (mode === 'signup' && code === 'SIGNUP_DISABLED') {
           setError(t('auth.signupDisabled'))
           setSuggestMode('signin')

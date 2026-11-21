@@ -359,6 +359,20 @@ function assertSignupDomainAllowed(email: string): void {
   })
 }
 
+/**
+ * Fork: SIGNUP_REQUIRES_APPROVAL. A new account is created banned with this
+ * reason, so the admin plugin refuses it a session (web and MCP alike) until
+ * an admin approves it in /admin, which is an unban. The first account on an
+ * empty instance is let through, or nobody could ever approve anyone.
+ */
+export const PENDING_APPROVAL_REASON = 'pending-approval'
+
+async function needsApproval(): Promise<boolean> {
+  if (!env.SIGNUP_REQUIRES_APPROVAL) return false
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(authSchema.user)
+  return (row?.n ?? 0) > 0
+}
+
 function buildAuth() {
   const oidc = loadOidcConfig()
   const google = loadGoogleConfig()
@@ -485,6 +499,9 @@ function buildAuth() {
         create: {
           before: async (user) => {
             assertSignupDomainAllowed(user.email)
+            if (await needsApproval()) {
+              return { data: { ...user, banned: true, banReason: PENDING_APPROVAL_REASON } }
+            }
           },
           after: async (user) => {
             const first = (user.name || 'Your').split(/\s+/)[0]
@@ -535,7 +552,11 @@ function buildAuth() {
         loginPage: '/',
         oidcConfig: { loginPage: '/', consentPage: '/oauth/consent', refreshTokenExpiresIn: MCP_REFRESH_TOKEN_TTL_S },
       }),
-      admin({ impersonationSessionDuration: 15 * 60 }),
+      admin({
+        impersonationSessionDuration: 15 * 60,
+        /* also what a not-yet-approved signup is told (SIGNUP_REQUIRES_APPROVAL) */
+        bannedUserMessage: "This account isn't active. New accounts wait for an administrator's approval.",
+      }),
       /* oneTimeToken: how a Google / Microsoft / SSO sign-in finished in the
          system browser reaches the desktop app (src/lib/desktopAuth.ts). The
          browser session mints a token, the app redeems it and gets the same

@@ -1,0 +1,26 @@
+import type { Catalog } from '..'
+
+export const shell: Catalog['shell'] = {
+  account: 'Konto',
+  settings: 'Seaded',
+  admin: 'Admin',
+  helpDocs: 'Abi ja dokumentatsioon',
+  desktopApp: 'Laadi alla töölauarakendus',
+  website: 'Doopi veebileht',
+  appearance: 'Välimus',
+  logOut: 'Logi välja',
+  updateTitle: 'Uuendus saadaval',
+  updateBody: 'Doop {version} on valmis. Uuenduse rakendamiseks taaskäivita.',
+  updateAgentNote: 'Taaskäivitamine peatab pooleli oleva agendi töö.',
+  updateRestart: 'Taaskäivita ja uuenda',
+  updateRestarting: 'Taaskäivitamine…',
+  updateLater: 'Mitte praegu',
+  appPromoDismiss: 'Peida',
+  appPromoDesktopTitle: 'Doopi töölauarakendus',
+  appPromoDesktopBody: 'Käivita Claude Code oma paketiga otse lõuendi kõrval.',
+  appPromoDownloadFor: 'Laadi alla: {platform}',
+  appPromoIosTitle: 'Doop iPhone’ile ja iPadile',
+  appPromoIosBody: 'Jälgi, kuidas agendid kujundavad, vaata raame üle ja vasta kommentaaridele – kõik ühes rakenduses.',
+  appPromoIosGet: 'Laadi alla App Store’ist',
+  appPromoIosLater: 'Jätka brauseris',
+}
