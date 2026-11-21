@@ -1,0 +1,19 @@
+# VPS deploy: Traefik is the only ingress (no published host port), and the
+# database gets a real password. Symlinked to the repo root on the server so
+# `docker compose` picks it up automatically. Values come from the root .env.
+services:
+  doop:
+    ports: !reset []
+    environment:
+      DATABASE_URL: postgres://doop:${POSTGRES_PASSWORD}@db:5432/doop
+      SECRETS_ENCRYPTION_KEYS: ${SECRETS_ENCRYPTION_KEYS}
+      TRUSTED_ORIGINS: https://${DOOP_HOST}
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.doop.rule: Host(`${DOOP_HOST}`)
+      traefik.http.routers.doop.entrypoints: websecure
+      traefik.http.routers.doop.tls.certresolver: letsencrypt
+      traefik.http.services.doop.loadbalancer.server.port: '4400'
+  db:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
