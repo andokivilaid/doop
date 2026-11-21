@@ -78,6 +78,9 @@ const TITLES: Record<AuthMode, PlainMessageKey> = {
   reset: 'auth.titleReset',
 }
 
+/* fork: hide the marketing tagline on the sign-in / sign-up card (flip to bring it back) */
+const SHOW_AUTH_TAGLINE = false
+
 /** The redirect knobs shared by better-auth's social and oauth2 sign-ins. */
 interface ProviderStart extends ProviderRedirects {
   errorCallbackURL: string
@@ -372,7 +375,13 @@ export function AuthPage({ initialMode }: { initialMode?: 'signin' | 'signup' } 
         } else if (code === 'BANNED_USER') {
           /* fork: SIGNUP_REQUIRES_APPROVAL — a fresh signup is created
              waiting, and a sign-in before approval lands here too */
-          setNotice(t('auth.awaitingApproval'))
+          if (mode === 'signup') {
+            setMode('signin')
+            setPassword('')
+            setNotice(t('auth.signupPendingApproval'))
+          } else {
+            setNotice(t('auth.awaitingApproval'))
+          }
         } else if (mode === 'signup' && code === 'SIGNUP_DISABLED') {
           setError(t('auth.signupDisabled'))
           setSuggestMode('signin')
@@ -406,7 +415,7 @@ export function AuthPage({ initialMode }: { initialMode?: 'signin' | 'signup' } 
     return (
       <AuthScreen>
         <AuthCard title={t('auth.redirectingTo', { provider: oidc.displayName ?? '' })} align="center">
-          <AuthCardText>{t('auth.taglineSignin')}</AuthCardText>
+          {SHOW_AUTH_TAGLINE && <AuthCardText>{t('auth.taglineSignin')}</AuthCardText>}
           <Button
             variant="link"
             size="sm"
@@ -430,18 +439,20 @@ export function AuthPage({ initialMode }: { initialMode?: 'signin' | 'signup' } 
     <AuthScreen>
       <ServerSettings />
       <AuthCard as="form" title={t(TITLES[mode])} onSubmit={submit}>
-        <AuthCardText className="mb-2">
-          {mode === 'forgot' ? (
-            t('auth.forgotBlurb')
-          ) : mode === 'reset' ? (
-            t('auth.resetBlurb')
-          ) : (
-            <>
-              {t('auth.taglineBefore')} <em className="not-italic text-brand">{t('auth.taglineEmphasis')}</em>
-              {t('auth.taglineAfter')} {mode === 'signin' ? t('auth.taglineSignin') : t('auth.taglineSignup')}
-            </>
-          )}
-        </AuthCardText>
+        {(mode === 'forgot' || mode === 'reset' || SHOW_AUTH_TAGLINE) && (
+          <AuthCardText className="mb-2">
+            {mode === 'forgot' ? (
+              t('auth.forgotBlurb')
+            ) : mode === 'reset' ? (
+              t('auth.resetBlurb')
+            ) : (
+              <>
+                {t('auth.taglineBefore')} <em className="not-italic text-brand">{t('auth.taglineEmphasis')}</em>
+                {t('auth.taglineAfter')} {mode === 'signin' ? t('auth.taglineSignin') : t('auth.taglineSignup')}
+              </>
+            )}
+          </AuthCardText>
+        )}
         {(oidc.enabled || oidc.google || oidc.microsoft || oidc.apple) && (mode === 'signin' || mode === 'signup') && (
           <>
             {oidc.google && (

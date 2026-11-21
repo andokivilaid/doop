@@ -42,10 +42,10 @@ function DoopTile({ size }: { size: number }) {
     <span
       className="grid flex-none place-items-center shadow-pop"
       /* the app icon's own ink, the same in both themes */
-      style={{ width: size, height: size, borderRadius: '23%', background: '#1d1c1a' }}
+      style={{ width: size, height: size, borderRadius: '23%', background: '#181615' }}
     >
-      <span style={{ width: size * 0.46, height: size * 0.6 }}>
-        <DoopMark size="fill" color="#e9e7e2" className="block" />
+      <span style={{ width: size * 0.64, height: size * 0.61 }}>
+        <DoopMark size="fill" className="block" />
       </span>
     </span>
   )

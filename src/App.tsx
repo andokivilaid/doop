@@ -3,6 +3,7 @@ import { navigate } from './lib/navigate'
 import { useEffect, useRef, useState } from 'react'
 import { Home } from './pages/Home'
 import { Community } from './pages/Community'
+import { SHOW_COMMUNITY } from './components/AppRail'
 import { Settings } from './pages/Settings'
 import { CanvasPage } from './pages/CanvasPage'
 import { PrototypePage } from './pages/PrototypePage'
@@ -212,7 +213,7 @@ export function App() {
     <Admin />
   ) : path.startsWith('/settings') ? (
     <Settings />
-  ) : path.startsWith('/community') ? (
+  ) : SHOW_COMMUNITY && path.startsWith('/community') ? (
     <Community />
   ) : path.startsWith('/integrations') ? (
     <Integrations />

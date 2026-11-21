@@ -121,7 +121,7 @@ describe.skipIf(!findBrowserPath())('sign-in policy', { timeout: 30_000 }, () =>
   /** Open the form under a policy, with any extra query the page should see. */
   async function open(login: Record<string, unknown>, extra = '') {
     await page.goto(`${fixtureUrl('authForm.html')}?login=${encodeURIComponent(JSON.stringify(login))}${extra}`)
-    await page.waitForSelector('[data-slot="auth-card-text"]')
+    await page.waitForSelector('[data-slot="auth-card"]')
   }
 
   function buttonLabels() {
